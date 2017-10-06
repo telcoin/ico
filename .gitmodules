@@ -1,0 +1,3 @@
+[submodule "vendor/testrpc"]
+	path = vendor/testrpc
+	url = https://github.com/ethereumjs/testrpc.git

@@ -1,0 +1,7 @@
+version: "3"
+services:
+  testrpc:
+    build:
+      context: ./vendor/testrpc
+    ports:
+      - 8545:8545
