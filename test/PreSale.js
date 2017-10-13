@@ -109,6 +109,27 @@ contract('PreSale', accounts => {
       }
     })
 
+    it(`should not be possible when sale is paused`, async () => {
+      const [owner, wallet, investor] = accounts
+      const sale = await createPreSale({owner, wallet})
+
+      const startTime = await sale.startTime.call()
+      await evm.increaseTimeTo(startTime.toNumber())
+
+      await sale.pause()
+
+      try {
+        await sale.send(evm.wei(1, 'ether'), {from: investor})
+        assert.fail(`Managed to buy tokens when sale was paused`)
+      } catch (err) {
+        assertJump(err)
+      }
+
+      await sale.unpause()
+
+      await sale.send(evm.wei(1, 'ether'), {from: investor})
+    })
+
     it(`should increase total token supply`, async () => {
       const [owner, wallet, investor] = accounts
       const sale = await createPreSale({owner, wallet, rate: 1})

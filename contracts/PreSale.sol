@@ -8,6 +8,8 @@ contract PreSale {
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event TokenPurchase(address indexed purchaser, address indexed beneficiary, uint256 value, uint256 amount);
+    event Pause();
+    event Unpause();
     event Finalized();
     event Refunding();
     event Refunded(address indexed beneficiary, uint256 weiAmount);
@@ -90,6 +92,18 @@ contract PreSale {
         Finalized();
 
         finished = true;
+    }
+
+    function pause() onlyOwner public {
+        require(!paused);
+        paused = true;
+        Pause();
+    }
+
+    function unpause() onlyOwner public {
+        require(paused);
+        paused = false;
+        Unpause();
     }
 
     function refund(address _investor) public {
