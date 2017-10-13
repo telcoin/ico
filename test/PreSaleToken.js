@@ -2,6 +2,8 @@
 
 const assert = require('assert')
 
+const assertJump = require('./helpers/assertJump')
+
 const PreSaleToken = artifacts.require('./PreSaleToken.sol')
 
 contract('PreSaleToken', accounts => {
@@ -13,7 +15,7 @@ contract('PreSaleToken', accounts => {
         await token.transferOwnership(nonOwner, { from: nonOwner })
         assert.fail(`Non-owner managed to transfer ownership`)
       } catch (err) {
-        // Great!
+        assertJump(err)
       }
     })
 
@@ -34,7 +36,7 @@ contract('PreSaleToken', accounts => {
         await token.mint(nonOwner, 10000, { from: nonOwner })
         assert.fail(`Non-owner managed to mint tokens`)
       } catch (err) {
-        // Expected
+        assertJump(err)
       }
     })
 
@@ -59,7 +61,7 @@ contract('PreSaleToken', accounts => {
         await token.mint(owner, 0, { from: owner })
         assert.fail(`Managed to mint 0 tokens`)
       } catch (err) {
-        // Great!
+        assertJump(err)
       }
     })
 
@@ -84,7 +86,7 @@ contract('PreSaleToken', accounts => {
         await token.mint(owner, 10000, { from: owner })
         assert.fail(`Managed to mint tokens after minting finished`)
       } catch (err) {
-        // Great!
+        assertJump(err)
       }
     })
   })
@@ -98,7 +100,7 @@ contract('PreSaleToken', accounts => {
         await token.burn(nonOwner, 50, { from: nonOwner })
         assert.fail(`Non-owner managed to burn tokens`)
       } catch (err) {
-        // Expected
+        assertJump(err)
       }
     })
 
@@ -118,7 +120,7 @@ contract('PreSaleToken', accounts => {
         await token.burn(nonOwner, 51, { from: owner })
         assert.fail(`Managed to burn more more tokens than available`)
       } catch (err) {
-        // Expected
+        assertJump(err)
       }
     })
 
@@ -130,7 +132,7 @@ contract('PreSaleToken', accounts => {
         await token.burn(owner, 0, { from: owner })
         assert.fail(`Managed to burn 0 tokens`)
       } catch (err) {
-        // Great!
+        assertJump(err)
       }
     })
 
@@ -171,7 +173,7 @@ contract('PreSaleToken', accounts => {
         await token.burn(owner, 10000, { from: owner })
         assert.fail(`Managed to burn tokens after minting finished`)
       } catch (err) {
-        // Great!
+        assertJump(err)
       }
     })
   })
