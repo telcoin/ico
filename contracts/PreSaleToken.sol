@@ -27,6 +27,7 @@ contract PreSaleToken {
 
     function mint(address _to, uint256 _amount) onlyOwner public returns (bool) {
         require(!mintingFinished);
+        require(_amount > 0);
 
         totalSupply = totalSupply.add(_amount);
         balances[_to] = balances[_to].add(_amount);
