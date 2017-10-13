@@ -17,8 +17,8 @@ contract PreSaleToken {
     address public owner;
 
     modifier onlyOwner() {
-      require(msg.sender == owner);
-      _;
+        require(msg.sender == owner);
+        _;
     }
 
     function PreSaleToken() {
@@ -60,9 +60,9 @@ contract PreSaleToken {
     }
 
     function transferOwnership(address _to) onlyOwner public {
-      require(_to != address(0));
-      OwnershipTransferred(owner, _to);
-      owner = _to;
+        require(_to != address(0));
+        OwnershipTransferred(owner, _to);
+        owner = _to;
     }
 
     function balanceOf(address _owner) public constant returns (uint256) {
