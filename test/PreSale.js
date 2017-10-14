@@ -1,10 +1,8 @@
 /* global artifacts:false, contract:false, before: false, describe: false, it:false */
 
-const assert = require('assert')
-
-const assertJump = require('./helpers/assertJump')
 const duration = require('./helpers/duration')
 const evm = require('./helpers/evm')
+const {expect} = require('./helpers/chai')
 
 const PreSale = artifacts.require('./PreSale.sol')
 const PreSaleToken = artifacts.require('./PreSaleToken.sol')
@@ -47,20 +45,14 @@ contract('PreSale', accounts => {
     it(`should not be transferrable by non-owner`, async () => {
       const [owner, nonOwner, wallet] = accounts
       const sale = await createPreSale({owner, wallet})
-      try {
-        await sale.transferOwnership(nonOwner, {from: nonOwner})
-        assert.fail(`Non-owner managed to transfer ownership`)
-      } catch (err) {
-        assertJump(err)
-      }
+      await expect(sale.transferOwnership(nonOwner, {from: nonOwner})).to.be.rejectedWith(evm.Throw)
     })
 
     it(`should be transferrable by owner`, async () => {
       const [owner, nonOwner, wallet] = accounts
       const sale = await createPreSale({owner, wallet})
       await sale.transferOwnership(nonOwner, {from: owner})
-      const newOwner = await sale.owner.call()
-      assert.strictEqual(newOwner, nonOwner)
+      await expect(sale.owner.call()).to.eventually.equal(nonOwner)
     })
   })
 
@@ -71,8 +63,7 @@ contract('PreSale', accounts => {
       const startTime = await sale.startTime.call()
       await evm.increaseTimeTo(startTime.toNumber())
       const token = PreSaleToken.at(await sale.token.call())
-      const tokenOwner = await token.owner.call()
-      assert.strictEqual(tokenOwner, sale.address)
+      await expect(token.owner.call()).to.eventually.equal(sale.address)
     })
   })
 
@@ -80,44 +71,29 @@ contract('PreSale', accounts => {
     it(`should not be paused by default`, async () => {
       const [owner, wallet] = accounts
       const sale = await createPreSale({owner, wallet})
-
-      const paused = await sale.paused.call()
-      assert.strictEqual(paused, false)
+      await expect(sale.paused.call()).to.eventually.equal(false)
     })
 
     it(`should set paused flag`, async () => {
       const [owner, wallet] = accounts
       const sale = await createPreSale({owner, wallet})
-
       await sale.pause()
-
-      const paused = await sale.paused.call()
-      assert.strictEqual(paused, true)
+      await expect(sale.paused.call()).to.eventually.equal(true)
     })
 
     it(`should not be possible if already paused`, async () => {
       const [owner, wallet] = accounts
       const sale = await createPreSale({owner, wallet})
-
       await sale.pause()
-
-      try {
-        await sale.pause()
-        assert.fail(`Managed to pause an already paused sale`)
-      } catch (err) {
-        assertJump(err)
-      }
+      await expect(sale.pause()).to.be.rejectedWith(evm.Throw)
     })
 
     it(`should be unpausable`, async () => {
       const [owner, wallet] = accounts
       const sale = await createPreSale({owner, wallet})
-
       await sale.pause()
       await sale.unpause()
-
-      const paused = await sale.paused.call()
-      assert.strictEqual(paused, false)
+      await expect(sale.paused.call()).to.eventually.equal(false)
     })
   })
 
@@ -125,14 +101,7 @@ contract('PreSale', accounts => {
     it(`should not be possible until sale starts`, async () => {
       const [owner, wallet] = accounts
       const sale = await createPreSale({owner, wallet})
-
-      try {
-        await sale.send(evm.wei(1, 'ether'))
-        assert.fail(`Managed to buy tokens before sale started`)
-      } catch (err) {
-        assertJump(err)
-      }
-
+      await expect(sale.send(evm.wei(1, 'ether'))).to.be.rejectedWith(evm.Throw)
       const startTime = await sale.startTime.call()
       await evm.increaseTimeTo(startTime.toNumber())
       await sale.send(evm.wei(1, 'ether'))
@@ -141,34 +110,18 @@ contract('PreSale', accounts => {
     it(`should not be possible after sale ends`, async () => {
       const [owner, wallet] = accounts
       const sale = await createPreSale({owner, wallet})
-
       const endTime = await sale.endTime.call()
       await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
-
-      try {
-        await sale.send(evm.wei(1, 'ether'))
-        assert.fail(`Managed to buy tokens after sale ended`)
-      } catch (err) {
-        assertJump(err)
-      }
+      await expect(sale.send(evm.wei(1, 'ether'))).to.be.rejectedWith(evm.Throw)
     })
 
     it(`should not be possible when sale is paused`, async () => {
       const [owner, wallet] = accounts
       const sale = await createPreSale({owner, wallet})
-
       const startTime = await sale.startTime.call()
       await evm.increaseTimeTo(startTime.toNumber())
-
       await sale.pause()
-
-      try {
-        await sale.send(evm.wei(1, 'ether'))
-        assert.fail(`Managed to buy tokens when sale was paused`)
-      } catch (err) {
-        assertJump(err)
-      }
-
+      await expect(sale.send(evm.wei(1, 'ether'))).to.be.rejectedWith(evm.Throw)
       await sale.unpause()
       await sale.send(evm.wei(1, 'ether'))
     })
@@ -179,11 +132,9 @@ contract('PreSale', accounts => {
       const startTime = await sale.startTime.call()
       await evm.increaseTimeTo(startTime.toNumber())
       const token = PreSaleToken.at(await sale.token.call())
-      const totalBefore = await token.totalSupply.call()
+      await expect(token.totalSupply.call()).to.eventually.be.bignumber.equal(0)
       await sale.sendTransaction({value: evm.wei(1, 'ether'), from: investor})
-      const totalAfter = await token.totalSupply.call()
-      assert.ok(totalBefore.equals(0))
-      assert.ok(totalAfter.equals(evm.wei(1, 'ether')))
+      await expect(token.totalSupply.call()).to.eventually.be.bignumber.equal(evm.wei(1, 'ether'))
     })
 
     it(`should increase weiRaised`, async () => {
@@ -191,12 +142,10 @@ contract('PreSale', accounts => {
       const sale = await createPreSale({owner, wallet})
       const startTime = await sale.startTime.call()
       await evm.increaseTimeTo(startTime.toNumber())
-      const before = await sale.weiRaised.call()
+      await expect(sale.weiRaised.call()).to.eventually.be.bignumber.equal(0)
       await sale.sendTransaction({value: evm.wei(1, 'ether'), from: investor})
       await sale.sendTransaction({value: evm.wei(3, 'ether'), from: investor})
-      const after = await sale.weiRaised.call()
-      assert.ok(before.equals(0))
-      assert.ok(after.equals(evm.wei(4, 'ether')))
+      await expect(sale.weiRaised.call()).to.eventually.be.bignumber.equal(evm.wei(4, 'ether'))
     })
 
     it(`should assign tokens to the investor`, async () => {
@@ -205,12 +154,10 @@ contract('PreSale', accounts => {
       const startTime = await sale.startTime.call()
       await evm.increaseTimeTo(startTime.toNumber())
       const token = PreSaleToken.at(await sale.token.call())
-      const before = await token.balanceOf.call(investor)
+      await expect(token.balanceOf.call(investor)).to.eventually.bignumber.equal(0)
       await sale.sendTransaction({value: evm.wei(1, 'wei'), from: investor})
       await sale.sendTransaction({value: evm.wei(3, 'wei'), from: investor})
-      const after = await token.balanceOf.call(investor)
-      assert.ok(before.equals(0))
-      assert.ok(after.equals(evm.wei(4, 'wei')))
+      await expect(token.balanceOf.call(investor)).to.eventually.bignumber.equal(evm.wei(4, 'wei'))
     })
   })
 })

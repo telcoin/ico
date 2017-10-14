@@ -4,6 +4,10 @@ const assert = require('assert')
 
 const promisor = require('./promisor')
 
+module.exports.Throw = 'invalid opcode'
+
+module.exports.BigNumber = web3.BigNumber
+
 const wei = (n, unit) => new web3.BigNumber(web3.toWei(n, unit))
 
 module.exports.wei = wei
