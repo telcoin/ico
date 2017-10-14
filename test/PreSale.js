@@ -123,11 +123,11 @@ contract('PreSale', accounts => {
 
   describe('buying tokens', () => {
     it(`should not be possible until sale starts`, async () => {
-      const [owner, wallet, investor] = accounts
+      const [owner, wallet] = accounts
       const sale = await createPreSale({owner, wallet})
 
       try {
-        await sale.send(evm.wei(1, 'ether'), {from: investor})
+        await sale.send(evm.wei(1, 'ether'))
         assert.fail(`Managed to buy tokens before sale started`)
       } catch (err) {
         assertJump(err)
@@ -135,19 +135,18 @@ contract('PreSale', accounts => {
 
       const startTime = await sale.startTime.call()
       await evm.increaseTimeTo(startTime.toNumber())
-
-      await sale.send(evm.wei(1, 'ether'), {from: investor})
+      await sale.send(evm.wei(1, 'ether'))
     })
 
     it(`should not be possible after sale ends`, async () => {
-      const [owner, wallet, investor] = accounts
+      const [owner, wallet] = accounts
       const sale = await createPreSale({owner, wallet})
 
       const endTime = await sale.endTime.call()
       await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
 
       try {
-        await sale.send(evm.wei(1, 'ether'), {from: investor})
+        await sale.send(evm.wei(1, 'ether'))
         assert.fail(`Managed to buy tokens after sale ended`)
       } catch (err) {
         assertJump(err)
@@ -155,7 +154,7 @@ contract('PreSale', accounts => {
     })
 
     it(`should not be possible when sale is paused`, async () => {
-      const [owner, wallet, investor] = accounts
+      const [owner, wallet] = accounts
       const sale = await createPreSale({owner, wallet})
 
       const startTime = await sale.startTime.call()
@@ -164,15 +163,14 @@ contract('PreSale', accounts => {
       await sale.pause()
 
       try {
-        await sale.send(evm.wei(1, 'ether'), {from: investor})
+        await sale.send(evm.wei(1, 'ether'))
         assert.fail(`Managed to buy tokens when sale was paused`)
       } catch (err) {
         assertJump(err)
       }
 
       await sale.unpause()
-
-      await sale.send(evm.wei(1, 'ether'), {from: investor})
+      await sale.send(evm.wei(1, 'ether'))
     })
 
     it(`should increase total token supply`, async () => {
@@ -182,11 +180,10 @@ contract('PreSale', accounts => {
       await evm.increaseTimeTo(startTime.toNumber())
       const token = PreSaleToken.at(await sale.token.call())
       const totalBefore = await token.totalSupply.call()
-      const value = evm.wei(1, 'ether')
-      await sale.send(value, {from: investor})
+      await sale.sendTransaction({value: evm.wei(1, 'ether'), from: investor})
       const totalAfter = await token.totalSupply.call()
       assert.ok(totalBefore.equals(0))
-      assert.ok(totalAfter.equals(value))
+      assert.ok(totalAfter.equals(evm.wei(1, 'ether')))
     })
 
     it(`should increase weiRaised`, async () => {
@@ -195,11 +192,25 @@ contract('PreSale', accounts => {
       const startTime = await sale.startTime.call()
       await evm.increaseTimeTo(startTime.toNumber())
       const before = await sale.weiRaised.call()
-      await sale.send(evm.wei(1, 'ether'), {from: investor})
-      await sale.send(evm.wei(3, 'ether'), {from: investor})
+      await sale.sendTransaction({value: evm.wei(1, 'ether'), from: investor})
+      await sale.sendTransaction({value: evm.wei(3, 'ether'), from: investor})
       const after = await sale.weiRaised.call()
       assert.ok(before.equals(0))
       assert.ok(after.equals(evm.wei(4, 'ether')))
+    })
+
+    it(`should assign tokens to the investor`, async () => {
+      const [owner, wallet, investor] = accounts
+      const sale = await createPreSale({owner, wallet, rate: 1})
+      const startTime = await sale.startTime.call()
+      await evm.increaseTimeTo(startTime.toNumber())
+      const token = PreSaleToken.at(await sale.token.call())
+      const before = await token.balanceOf.call(investor)
+      await sale.sendTransaction({value: evm.wei(1, 'wei'), from: investor})
+      await sale.sendTransaction({value: evm.wei(3, 'wei'), from: investor})
+      const after = await token.balanceOf.call(investor)
+      assert.ok(before.equals(0))
+      assert.ok(after.equals(evm.wei(4, 'wei')))
     })
   })
 })
