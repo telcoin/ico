@@ -76,6 +76,51 @@ contract('PreSale', accounts => {
     })
   })
 
+  describe('pausing', () => {
+    it(`should not be paused by default`, async () => {
+      const [owner, wallet] = accounts
+      const sale = await createPreSale({owner, wallet})
+
+      const paused = await sale.paused.call()
+      assert.strictEqual(paused, false)
+    })
+
+    it(`should set paused flag`, async () => {
+      const [owner, wallet] = accounts
+      const sale = await createPreSale({owner, wallet})
+
+      await sale.pause()
+
+      const paused = await sale.paused.call()
+      assert.strictEqual(paused, true)
+    })
+
+    it(`should not be possible if already paused`, async () => {
+      const [owner, wallet] = accounts
+      const sale = await createPreSale({owner, wallet})
+
+      await sale.pause()
+
+      try {
+        await sale.pause()
+        assert.fail(`Managed to pause an already paused sale`)
+      } catch (err) {
+        assertJump(err)
+      }
+    })
+
+    it(`should be unpausable`, async () => {
+      const [owner, wallet] = accounts
+      const sale = await createPreSale({owner, wallet})
+
+      await sale.pause()
+      await sale.unpause()
+
+      const paused = await sale.paused.call()
+      assert.strictEqual(paused, false)
+    })
+  })
+
   describe('buying tokens', () => {
     it(`should not be possible until sale starts`, async () => {
       const [owner, wallet, investor] = accounts
