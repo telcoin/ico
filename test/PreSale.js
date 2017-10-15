@@ -207,7 +207,7 @@ contract('PreSale', accounts => {
     })
 
     describe(`during sale`, () => {
-      describe(`from a non-whitelisted address`, () => {
+      describe(`for a non-whitelisted beneficiary`, () => {
         it(`should not be possible`, async () => {
           const [owner, wallet, investor] = accounts
           const sale = await createPreSale({owner, wallet})
@@ -218,67 +218,80 @@ contract('PreSale', accounts => {
         })
       })
 
-      describe(`from a whitelisted address`, () => {
-        it(`should increase total token supply`, async () => {
-          const [owner, wallet, investor] = accounts
-          const sale = await createPreSale({owner, wallet, rate: 1})
-          const startTime = await sale.startTime.call()
-          await evm.increaseTimeTo(startTime.toNumber())
-          const token = PreSaleToken.at(await sale.token.call())
-          await expect(token.totalSupply.call()).to.eventually.be.bignumber.equal(0)
-          await sale.whitelist(investor, true, {from: owner})
-          await sale.sendTransaction({value: evm.wei(1, 'ether'), from: investor})
-          await sale.buyTokens(investor, {value: evm.wei(1, 'ether'), from: investor})
-          await expect(token.totalSupply.call()).to.eventually.be.bignumber.equal(evm.wei(2, 'ether'))
+      describe(`for a whitelisted beneficiary`, () => {
+        describe(`from a non-whitelisted sender`, () => {
+          it(`should not be possible`, async () => {
+            const [owner, wallet, sender, beneficiary] = accounts
+            const sale = await createPreSale({owner, wallet})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await sale.whitelist(beneficiary, true, {from: owner})
+            await expect(sale.buyTokens(beneficiary, {value: evm.wei(1, 'ether'), from: sender})).to.be.rejectedWith(evm.Throw)
+          })
         })
 
-        it(`should increase weiRaised`, async () => {
-          const [owner, wallet, investor] = accounts
-          const sale = await createPreSale({owner, wallet})
-          const startTime = await sale.startTime.call()
-          await evm.increaseTimeTo(startTime.toNumber())
-          await expect(sale.weiRaised.call()).to.eventually.be.bignumber.equal(0)
-          await sale.whitelist(investor, true, {from: owner})
-          await sale.sendTransaction({value: evm.wei(1, 'ether'), from: investor})
-          await sale.buyTokens(investor, {value: evm.wei(3, 'ether'), from: investor})
-          await expect(sale.weiRaised.call()).to.eventually.be.bignumber.equal(evm.wei(4, 'ether'))
-        })
+        describe(`from a whitelisted sender`, () => {
+          it(`should increase total token supply`, async () => {
+            const [owner, wallet, investor] = accounts
+            const sale = await createPreSale({owner, wallet, rate: 1})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            const token = PreSaleToken.at(await sale.token.call())
+            await expect(token.totalSupply.call()).to.eventually.be.bignumber.equal(0)
+            await sale.whitelist(investor, true, {from: owner})
+            await sale.sendTransaction({value: evm.wei(1, 'ether'), from: investor})
+            await sale.buyTokens(investor, {value: evm.wei(1, 'ether'), from: investor})
+            await expect(token.totalSupply.call()).to.eventually.be.bignumber.equal(evm.wei(2, 'ether'))
+          })
 
-        it(`should assign tokens to the investor`, async () => {
-          const [owner, wallet, investor] = accounts
-          const sale = await createPreSale({owner, wallet, rate: 1})
-          const startTime = await sale.startTime.call()
-          await evm.increaseTimeTo(startTime.toNumber())
-          const token = PreSaleToken.at(await sale.token.call())
-          await expect(token.balanceOf.call(investor)).to.eventually.bignumber.equal(0)
-          await sale.whitelist(investor, true, {from: owner})
-          await sale.sendTransaction({value: evm.wei(1, 'wei'), from: investor})
-          await sale.buyTokens(investor, {value: evm.wei(3, 'wei'), from: investor})
-          await expect(token.balanceOf.call(investor)).to.eventually.bignumber.equal(evm.wei(4, 'wei'))
-        })
+          it(`should increase weiRaised`, async () => {
+            const [owner, wallet, investor] = accounts
+            const sale = await createPreSale({owner, wallet})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await expect(sale.weiRaised.call()).to.eventually.be.bignumber.equal(0)
+            await sale.whitelist(investor, true, {from: owner})
+            await sale.sendTransaction({value: evm.wei(1, 'ether'), from: investor})
+            await sale.buyTokens(investor, {value: evm.wei(3, 'ether'), from: investor})
+            await expect(sale.weiRaised.call()).to.eventually.be.bignumber.equal(evm.wei(4, 'ether'))
+          })
 
-        it(`should increase investor's deposited amount`, async () => {
-          const [owner, wallet, investor] = accounts
-          const sale = await createPreSale({owner, wallet})
-          const startTime = await sale.startTime.call()
-          await evm.increaseTimeTo(startTime.toNumber())
-          await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(0)
-          await sale.whitelist(investor, true, {from: owner})
-          await sale.sendTransaction({value: evm.wei(16, 'wei'), from: investor})
-          await sale.buyTokens(investor, {value: evm.wei(49, 'wei'), from: investor})
-          await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(evm.wei(65, 'wei'))
-        })
+          it(`should assign tokens to the investor`, async () => {
+            const [owner, wallet, investor] = accounts
+            const sale = await createPreSale({owner, wallet, rate: 1})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            const token = PreSaleToken.at(await sale.token.call())
+            await expect(token.balanceOf.call(investor)).to.eventually.bignumber.equal(0)
+            await sale.whitelist(investor, true, {from: owner})
+            await sale.sendTransaction({value: evm.wei(1, 'wei'), from: investor})
+            await sale.buyTokens(investor, {value: evm.wei(3, 'wei'), from: investor})
+            await expect(token.balanceOf.call(investor)).to.eventually.bignumber.equal(evm.wei(4, 'wei'))
+          })
 
-        it(`should add the investor to the list of investors`, async () => {
-          const [owner, wallet, investor] = accounts
-          const sale = await createPreSale({owner, wallet})
-          const startTime = await sale.startTime.call()
-          await evm.increaseTimeTo(startTime.toNumber())
-          await expect(sale.investors.call(0)).to.be.rejectedWith(evm.Throw)
-          await sale.whitelist(investor, true, {from: owner})
-          await sale.sendTransaction({value: evm.wei(16, 'wei'), from: investor})
-          await sale.buyTokens(investor, {value: evm.wei(49, 'wei'), from: investor})
-          await expect(sale.investors.call(0)).to.eventually.equal(investor)
+          it(`should increase investor's deposited amount`, async () => {
+            const [owner, wallet, investor] = accounts
+            const sale = await createPreSale({owner, wallet})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(0)
+            await sale.whitelist(investor, true, {from: owner})
+            await sale.sendTransaction({value: evm.wei(16, 'wei'), from: investor})
+            await sale.buyTokens(investor, {value: evm.wei(49, 'wei'), from: investor})
+            await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(evm.wei(65, 'wei'))
+          })
+
+          it(`should add the investor to the list of investors`, async () => {
+            const [owner, wallet, investor] = accounts
+            const sale = await createPreSale({owner, wallet})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await expect(sale.investors.call(0)).to.be.rejectedWith(evm.Throw)
+            await sale.whitelist(investor, true, {from: owner})
+            await sale.sendTransaction({value: evm.wei(16, 'wei'), from: investor})
+            await sale.buyTokens(investor, {value: evm.wei(49, 'wei'), from: investor})
+            await expect(sale.investors.call(0)).to.eventually.equal(investor)
+          })
         })
       })
     })

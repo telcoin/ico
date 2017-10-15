@@ -98,6 +98,7 @@ contract PreSale {
     function buyTokens(address _beneficiary) saleOpen public payable {
         require(_beneficiary != address(0));
         require(whitelisted[_beneficiary]);
+        require(whitelisted[msg.sender]);
         require(msg.value > 0);
 
         uint256 weiAmount = msg.value;
