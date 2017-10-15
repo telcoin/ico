@@ -14,19 +14,48 @@ contract PreSale {
     event Refunding();
     event Refunded(address indexed beneficiary, uint256 weiAmount);
 
+    /// The owner of the contract.
     address public owner;
+
+    /// The token we're selling.
     PreSaleToken public token;
+
+    /// The minimum goal to reach. If the goal is not reached, finishing
+    /// the sale will enable refunds.
     uint256 public goal;
+
+    /// The sale period.
     uint256 public startTime;
     uint256 public endTime;
+
+    /// The numnber of tokens to mint per wei.
     uint256 public rate;
+
+    /// The total number of wei raised. Note that the contract's balance may
+    /// differ from this value if someone has decided to forcefully send us
+    /// ether.
     uint256 public weiRaised;
+
+    /// The wallet that will receive the contract's balance once the sale
+    /// finishes and the minimum goal is met.
     address public wallet;
+
+    /// The amount of wei invested by each investor.
     mapping(address => uint256) deposited;
+
+    /// An enumerable list of investors.
     address[] public investors;
+
+    /// Whether the sale is paused.
     bool public paused = false;
+
+    /// Whether the sale has finished.
     bool public finished = false;
+
+    /// Whether we're accepting refunds.
     bool public refunding = false;
+
+    /// The total number of wei refunded.
     uint256 public weiRefunded;
 
     modifier onlyOwner() {

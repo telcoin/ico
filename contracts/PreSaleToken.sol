@@ -11,10 +11,17 @@ contract PreSaleToken {
     event MintFinished();
     event Transfer(address indexed from, address indexed to, uint256 value);
 
-    uint256 public totalSupply;
-    mapping(address => uint256) balances;
-    bool public mintingFinished = false;
+    /// The owner of the contract.
     address public owner;
+
+    /// The total number of minted tokens, excluding destroyed tokens.
+    uint256 public totalSupply;
+
+    /// The token balance of each address.
+    mapping(address => uint256) balances;
+
+    /// Whether the token is still mintable.
+    bool public mintingFinished = false;
 
     modifier onlyOwner() {
         require(msg.sender == owner);
