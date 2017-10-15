@@ -296,4 +296,95 @@ contract('PreSale', accounts => {
       })
     })
   })
+
+  describe(`finishing`, () => {
+    describe(`by non-owner`, () => {
+      it(`should not be possible`, async () => {
+        const [owner, wallet, nonOwner] = accounts
+        const sale = await createPreSale({owner, wallet})
+        const endTime = await sale.endTime.call()
+        await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+        await expect(sale.finish({from: nonOwner})).to.be.rejectedWith(evm.Throw)
+      })
+    })
+
+    describe(`by owner`, () => {
+      describe(`before sale has ended`, () => {
+        it(`should not be possible`, async () => {
+          const [owner, wallet] = accounts
+          const sale = await createPreSale({owner, wallet})
+          await expect(sale.finish({from: owner})).to.be.rejectedWith(evm.Throw)
+        })
+      })
+
+      describe(`after sale has ended`, () => {
+        describe(`when goal has not been reached`, () => {
+          it(`should set finished flag`, async () => {
+            const [owner, wallet] = accounts
+            const sale = await createPreSale({owner, wallet, goal: evm.wei(100, 'wei')})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            await expect(sale.finished.call()).to.eventually.equal(false)
+            await expect(sale.finish({from: owner})).to.be.fulfilled
+            await expect(sale.finished.call()).to.eventually.equal(true)
+          })
+
+          it(`should set refunding flag`, async () => {
+            const [owner, wallet] = accounts
+            const sale = await createPreSale({owner, wallet, goal: evm.wei(100, 'wei')})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            await expect(sale.refunding.call()).to.eventually.equal(false)
+            await expect(sale.finish({from: owner})).to.be.fulfilled
+            await expect(sale.refunding.call()).to.eventually.equal(true)
+          })
+        })
+
+        describe(`when goal has been reached`, () => {
+          it(`should set finished flag`, async () => {
+            const [owner, wallet, investor] = accounts
+            const sale = await createPreSale({owner, wallet, goal: evm.wei(100, 'wei')})
+            await sale.whitelist(investor, true, {from: owner})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await sale.buyTokens(investor, {value: evm.wei(100, 'wei'), from: investor})
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            await expect(sale.finished.call()).to.eventually.equal(false)
+            await expect(sale.finish({from: owner})).to.be.fulfilled
+            await expect(sale.finished.call()).to.eventually.equal(true)
+          })
+
+          it(`should not set refunding flag`, async () => {
+            const [owner, wallet, investor] = accounts
+            const sale = await createPreSale({owner, wallet, goal: evm.wei(100, 'wei')})
+            await sale.whitelist(investor, true, {from: owner})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await sale.buyTokens(investor, {value: evm.wei(100, 'wei'), from: investor})
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            await expect(sale.refunding.call()).to.eventually.equal(false)
+            await expect(sale.finish({from: owner})).to.be.fulfilled
+            await expect(sale.refunding.call()).to.eventually.equal(false)
+          })
+        })
+
+        it(`should not be possible to finish after already finished`, async () => {
+          const [owner, wallet] = accounts
+          const sale = await createPreSale({owner, wallet, goal: evm.wei(100, 'wei')})
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          const endTime = await sale.endTime.call()
+          await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+          await expect(sale.finish({from: owner})).to.be.fulfilled
+          await expect(sale.finish({from: owner})).to.be.rejectedWith(evm.Throw)
+        })
+      })
+    })
+  })
 })

@@ -123,7 +123,7 @@ contract PreSale {
         require(!finished);
         require(now > endTime);
 
-        if (weiRaised >= goal) {
+        if (weiRaised < goal) {
             refunding = true;
             Refunding();
         }
