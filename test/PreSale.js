@@ -433,4 +433,95 @@ contract('PreSale', accounts => {
       })
     })
   })
+
+  describe(`refunds`, () => {
+    describe(`when sale has not finished`, () => {
+      it(`should not be possible`, async () => {
+        const [owner, wallet, investor] = accounts
+        const sale = await createPreSale({owner, wallet, goal: evm.wei(100, 'wei')})
+        const sent = evm.wei(15, 'wei')
+        const startTime = await sale.startTime.call()
+        await evm.increaseTimeTo(startTime.toNumber())
+        await sale.whitelist(investor, true, {from: owner})
+        await sale.buyTokens(investor, {value: sent, from: investor})
+        await expect(sale.refund(investor, {from: investor})).to.be.rejectedWith(evm.Throw)
+      })
+    })
+
+    describe(`when sale has finished`, () => {
+      describe(`when refunding flag is not set`, () => {
+        it(`should not be possible`, async () => {
+          const [owner, wallet, investor] = accounts
+          const sale = await createPreSale({owner, wallet, goal: evm.wei(100, 'wei')})
+          const sent = evm.wei(150, 'wei')
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await sale.whitelist(investor, true, {from: owner})
+          await sale.buyTokens(investor, {value: sent, from: investor})
+          const endTime = await sale.endTime.call()
+          await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+          await expect(sale.finish({from: owner})).to.be.fulfilled
+          await expect(sale.refund(investor, {from: investor})).to.be.rejectedWith(evm.Throw)
+        })
+      })
+
+      describe(`when refunding flag is set`, () => {
+        it(`should transfer investor's deposited amount back to the investor`, async () => {
+          const [owner, wallet, investor1, investor2] = accounts
+          const sale = await createPreSale({owner, wallet, goal: evm.wei(100, 'wei')})
+          const sent1 = evm.wei(15, 'wei')
+          const sent2 = evm.wei(27, 'wei')
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await sale.whitelist(investor1, true, {from: owner})
+          await sale.whitelist(investor2, true, {from: owner})
+          await sale.buyTokens(investor1, {value: sent1, from: investor1})
+          await sale.buyTokens(investor2, {value: sent2, from: investor2})
+          const endTime = await sale.endTime.call()
+          await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+          await expect(sale.finish({from: owner})).to.be.fulfilled
+          const investor1BalanceBefore = await evm.getBalance(investor1)
+          await expect(sale.refund(investor1, {from: investor1, gasPrice: 0})).to.be.fulfilled
+          const investor1BalanceAfter = await evm.getBalance(investor1)
+          expect(investor1BalanceAfter.minus(investor1BalanceBefore)).to.bignumber.equal(sent1)
+          const investor2BalanceBefore = await evm.getBalance(investor2)
+          await expect(sale.refund(investor2, {from: investor2, gasPrice: 0})).to.be.fulfilled
+          const investor2BalanceAfter = await evm.getBalance(investor2)
+          expect(investor2BalanceAfter.minus(investor2BalanceBefore)).to.bignumber.equal(sent2)
+        })
+
+        it(`should increase weiRefunded`, async () => {
+          const [owner, wallet, investor] = accounts
+          const sale = await createPreSale({owner, wallet, goal: evm.wei(100, 'wei')})
+          const sent = evm.wei(15, 'wei')
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await sale.whitelist(investor, true, {from: owner})
+          await sale.buyTokens(investor, {value: sent, from: investor})
+          const endTime = await sale.endTime.call()
+          await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+          await expect(sale.finish({from: owner})).to.be.fulfilled
+          await expect(sale.weiRefunded.call()).to.eventually.bignumber.equal(0)
+          await expect(sale.refund(investor, {from: investor})).to.be.fulfilled
+          await expect(sale.weiRefunded.call()).to.eventually.bignumber.equal(sent)
+        })
+
+        it(`should set investor's deposit to 0`, async () => {
+          const [owner, wallet, investor] = accounts
+          const sale = await createPreSale({owner, wallet, goal: evm.wei(100, 'wei')})
+          const sent = evm.wei(15, 'wei')
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await sale.whitelist(investor, true, {from: owner})
+          await sale.buyTokens(investor, {value: sent, from: investor})
+          const endTime = await sale.endTime.call()
+          await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+          await expect(sale.finish({from: owner})).to.be.fulfilled
+          await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(sent)
+          await expect(sale.refund(investor, {from: investor})).to.be.fulfilled
+          await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(0)
+        })
+      })
+    })
+  })
 })
