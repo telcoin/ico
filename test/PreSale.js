@@ -189,6 +189,17 @@ contract('PreSale', accounts => {
         await sale.buyTokens(investor, {value: evm.wei(49, 'wei'), from: investor})
         await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(evm.wei(65, 'wei'))
       })
+
+      it(`should add the investor to the list of investors`, async () => {
+        const [owner, wallet, investor] = accounts
+        const sale = await createPreSale({owner, wallet})
+        const startTime = await sale.startTime.call()
+        await evm.increaseTimeTo(startTime.toNumber())
+        await expect(sale.investors.call(0)).to.be.rejectedWith(evm.Throw)
+        await sale.sendTransaction({value: evm.wei(16, 'wei'), from: investor})
+        await sale.buyTokens(investor, {value: evm.wei(49, 'wei'), from: investor})
+        await expect(sale.investors.call(0)).to.eventually.equal(investor)
+      })
     })
   })
 })
