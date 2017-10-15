@@ -58,7 +58,7 @@ contract('PreSale', accounts => {
     it(`should not allow 0x0 as owner`, async () => {
       const [owner, wallet] = accounts
       const sale = await createPreSale({owner, wallet})
-      await expect(sale.transferOwnership('0x0000000000000000000000000000000000000000', {from: owner})).to.be.rejectedWith(evm.Throw)
+      await expect(sale.transferOwnership(evm.ZERO, {from: owner})).to.be.rejectedWith(evm.Throw)
     })
   })
 
@@ -142,6 +142,12 @@ contract('PreSale', accounts => {
         const sale = await createPreSale({owner, wallet})
         await expect(sale.whitelist(investor, true, {from: owner})).to.be.fulfilled
         await expect(sale.whitelisted.call(investor)).to.eventually.equal(true)
+      })
+
+      it(`should not allow whitelisting 0x0`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.whitelist(evm.ZERO, true, {from: owner})).to.be.rejectedWith(evm.Throw)
       })
 
       it(`should allow unwhitelisting`, async () => {

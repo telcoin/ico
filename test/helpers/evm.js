@@ -8,6 +8,8 @@ module.exports.Throw = 'invalid opcode'
 
 module.exports.BigNumber = web3.BigNumber
 
+module.exports.ZERO = '0x0000000000000000000000000000000000000000'
+
 const wei = (n, unit) => new web3.BigNumber(web3.toWei(n, unit))
 
 module.exports.wei = wei
