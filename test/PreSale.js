@@ -54,6 +54,12 @@ contract('PreSale', accounts => {
       await sale.transferOwnership(nonOwner, {from: owner})
       await expect(sale.owner.call()).to.eventually.equal(nonOwner)
     })
+
+    it(`should not allow 0x0 as owner`, async () => {
+      const [owner, wallet] = accounts
+      const sale = await createPreSale({owner, wallet})
+      await expect(sale.transferOwnership('0x0000000000000000000000000000000000000000', {from: owner})).to.be.rejectedWith(evm.Throw)
+    })
   })
 
   describe('token', () => {

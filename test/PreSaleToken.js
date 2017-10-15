@@ -19,6 +19,12 @@ contract('PreSaleToken', accounts => {
       await token.transferOwnership(nonOwner, {from: owner})
       await expect(token.owner.call()).to.eventually.equal(nonOwner)
     })
+
+    it(`should not allow 0x0 as owner`, async () => {
+      const [owner] = accounts
+      const token = await PreSaleToken.new({from: owner})
+      await expect(token.transferOwnership('0x0000000000000000000000000000000000000000', {from: owner})).to.be.rejectedWith(evm.Throw)
+    })
   })
 
   describe('minting', () => {
