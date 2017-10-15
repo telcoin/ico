@@ -13,6 +13,7 @@ contract PreSale {
     event Finalized();
     event Refunding();
     event Refunded(address indexed beneficiary, uint256 weiAmount);
+    event Whitelisted(address indexed participant, bool allowed);
 
     /// The owner of the contract.
     address public owner;
@@ -39,6 +40,9 @@ contract PreSale {
     /// The wallet that will receive the contract's balance once the sale
     /// finishes and the minimum goal is met.
     address public wallet;
+
+    /// The list of addresses that are allowed to participate in the sale.
+    mapping(address => bool) public whitelisted;
 
     /// The amount of wei invested by each investor.
     mapping(address => uint256) deposited;
@@ -93,6 +97,7 @@ contract PreSale {
 
     function buyTokens(address _beneficiary) saleOpen public payable {
         require(_beneficiary != address(0));
+        require(whitelisted[_beneficiary]);
         require(msg.value > 0);
 
         uint256 weiAmount = msg.value;
@@ -157,5 +162,13 @@ contract PreSale {
         require(_to != address(0));
         OwnershipTransferred(owner, _to);
         owner = _to;
+    }
+
+    function whitelist(address _participant, bool _allowed) onlyOwner public {
+        require(_participant != 0x0);
+        require(whitelisted[_participant] != _allowed);
+
+        whitelisted[_participant] = _allowed;
+        Whitelisted(_participant, _allowed);
     }
 }
