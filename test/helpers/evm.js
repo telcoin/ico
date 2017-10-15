@@ -63,3 +63,9 @@ const increaseTimeTo = async target => {
 }
 
 module.exports.increaseTimeTo = increaseTimeTo
+
+const getBalance = async wallet => {
+  return web3.eth.getBalance(wallet)
+}
+
+module.exports.getBalance = getBalance

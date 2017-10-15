@@ -111,8 +111,6 @@ contract PreSale {
 
         token.mint(_beneficiary, tokens);
         TokenPurchase(msg.sender, _beneficiary, weiAmount, tokens);
-
-        wallet.transfer(weiAmount);
     }
 
     function depositOf(address _owner) public constant returns (uint256) {
@@ -123,14 +121,16 @@ contract PreSale {
         require(!finished);
         require(now > endTime);
 
-        if (weiRaised < goal) {
+        finished = true;
+
+        if (weiRaised >= goal) {
+            wallet.transfer(this.balance);
+        } else {
             refunding = true;
             Refunding();
         }
 
         Finalized();
-
-        finished = true;
     }
 
     function pause() onlyOwner public {

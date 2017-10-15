@@ -342,6 +342,32 @@ contract('PreSale', accounts => {
             await expect(sale.finish({from: owner})).to.be.fulfilled
             await expect(sale.refunding.call()).to.eventually.equal(true)
           })
+
+          it(`should not transfer balance to wallet`, async () => {
+            const [owner, wallet] = accounts
+            const sale = await createPreSale({owner, wallet, goal: evm.wei(100, 'wei')})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            const balanceBefore = await evm.getBalance(wallet)
+            await expect(sale.finish({from: owner})).to.be.fulfilled
+            const balanceAfter = await evm.getBalance(wallet)
+            expect(balanceAfter.minus(balanceBefore)).to.bignumber.equal(0)
+          })
+
+          it(`should keep balance unchanged`, async () => {
+            const [owner, wallet] = accounts
+            const sale = await createPreSale({owner, wallet, goal: evm.wei(100, 'wei')})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            const balanceBefore = await evm.getBalance(sale.address)
+            await expect(sale.finish({from: owner})).to.be.fulfilled
+            const balanceAfter = await evm.getBalance(sale.address)
+            expect(balanceAfter.minus(balanceBefore)).to.bignumber.equal(0)
+          })
         })
 
         describe(`when goal has been reached`, () => {
@@ -371,6 +397,26 @@ contract('PreSale', accounts => {
             await expect(sale.refunding.call()).to.eventually.equal(false)
             await expect(sale.finish({from: owner})).to.be.fulfilled
             await expect(sale.refunding.call()).to.eventually.equal(false)
+          })
+
+          it(`should transfer whole balance to wallet`, async () => {
+            const [owner, wallet, investor] = accounts
+            const goal = evm.wei(100, 'wei')
+            const sale = await createPreSale({owner, wallet, goal})
+            await sale.whitelist(investor, true, {from: owner})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await sale.buyTokens(investor, {value: goal, from: investor})
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            const walletBalanceBefore = await evm.getBalance(wallet)
+            const saleBalanceBefore = await evm.getBalance(sale.address)
+            expect(saleBalanceBefore).to.bignumber.equal(goal)
+            await expect(sale.finish({from: owner})).to.be.fulfilled
+            const walletBalanceAfter = await evm.getBalance(wallet)
+            const saleBalanceAfter = await evm.getBalance(sale.address)
+            expect(walletBalanceAfter.minus(walletBalanceBefore)).to.bignumber.equal(goal)
+            expect(saleBalanceAfter).to.bignumber.equal(0)
           })
         })
 
