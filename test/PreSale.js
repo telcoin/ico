@@ -521,6 +521,18 @@ contract('PreSale', accounts => {
           await expect(sale.refund(investor, {from: investor})).to.be.fulfilled
           await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(0)
         })
+
+        it(`should not be possible if deposit is 0`, async () => {
+          const [owner, wallet, investor] = accounts
+          const sale = await createPreSale({owner, wallet, goal: evm.wei(100, 'wei')})
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await sale.whitelist(investor, true, {from: owner})
+          const endTime = await sale.endTime.call()
+          await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+          await expect(sale.finish({from: owner})).to.be.fulfilled
+          await expect(sale.refund(investor, {from: investor})).to.be.rejectedWith(evm.Throw)
+        })
       })
     })
   })
