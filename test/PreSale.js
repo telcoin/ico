@@ -74,32 +74,49 @@ contract('PreSale', accounts => {
   })
 
   describe('pausing', () => {
-    it(`should not be paused by default`, async () => {
-      const [owner, wallet] = accounts
-      const sale = await createPreSale({owner, wallet})
-      await expect(sale.paused.call()).to.eventually.equal(false)
+    describe(`by non-owner`, () => {
+      it(`should not be possible to pause`, async () => {
+        const [owner, nonOwner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.pause({from: nonOwner})).to.be.rejectedWith(evm.Throw)
+      })
+
+      it(`should not be possible to unpause`, async () => {
+        const [owner, nonOwner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.pause({from: owner})).to.be.fulfilled
+        await expect(sale.unpause({from: nonOwner})).to.be.rejectedWith(evm.Throw)
+      })
     })
 
-    it(`should set paused flag`, async () => {
-      const [owner, wallet] = accounts
-      const sale = await createPreSale({owner, wallet})
-      await sale.pause()
-      await expect(sale.paused.call()).to.eventually.equal(true)
-    })
+    describe(`by owner`, () => {
+      it(`should be unpaused by default`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.paused.call()).to.eventually.equal(false)
+      })
 
-    it(`should not be possible if already paused`, async () => {
-      const [owner, wallet] = accounts
-      const sale = await createPreSale({owner, wallet})
-      await sale.pause()
-      await expect(sale.pause()).to.be.rejectedWith(evm.Throw)
-    })
+      it(`should set paused flag`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.pause({from: owner})).to.be.fulfilled
+        await expect(sale.paused.call()).to.eventually.equal(true)
+      })
 
-    it(`should be unpausable`, async () => {
-      const [owner, wallet] = accounts
-      const sale = await createPreSale({owner, wallet})
-      await sale.pause()
-      await sale.unpause()
-      await expect(sale.paused.call()).to.eventually.equal(false)
+      it(`should not be possible if already paused`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.pause({from: owner})).to.be.fulfilled
+        await expect(sale.pause()).to.be.rejectedWith(evm.Throw)
+      })
+
+      it(`should be unpausable`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.pause({from: owner})).to.be.fulfilled
+        await expect(sale.unpause({from: owner})).to.be.fulfilled
+        await expect(sale.paused.call()).to.eventually.equal(false)
+      })
     })
   })
 
