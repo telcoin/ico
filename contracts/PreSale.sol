@@ -80,6 +80,10 @@ contract PreSale {
         wallet.transfer(weiAmount);
     }
 
+    function depositOf(address _owner) public constant returns (uint256) {
+        return deposited[_owner];
+    }
+
     function finish() onlyOwner public {
         require(!finished);
         require(now > endTime);

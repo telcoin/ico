@@ -165,5 +165,16 @@ contract('PreSale', accounts => {
       await sale.sendTransaction({value: evm.wei(3, 'wei'), from: investor})
       await expect(token.balanceOf.call(investor)).to.eventually.bignumber.equal(evm.wei(4, 'wei'))
     })
+
+    it(`should increase investor's deposited amount`, async () => {
+      const [owner, wallet, investor] = accounts
+      const sale = await createPreSale({owner, wallet})
+      const startTime = await sale.startTime.call()
+      await evm.increaseTimeTo(startTime.toNumber())
+      await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(0)
+      await sale.sendTransaction({value: evm.wei(16, 'wei'), from: investor})
+      await sale.sendTransaction({value: evm.wei(49, 'wei'), from: investor})
+      await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(evm.wei(65, 'wei'))
+    })
   })
 })
