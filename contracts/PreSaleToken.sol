@@ -7,7 +7,6 @@ contract PreSaleToken {
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event Mint(address indexed to, uint256 amount);
-    event Burn(address indexed from, uint256 amount);
     event MintFinished();
     event Transfer(address indexed from, address indexed to, uint256 value);
 
@@ -40,19 +39,6 @@ contract PreSaleToken {
         balances[_to] = balances[_to].add(_amount);
         Mint(_to, _amount);
         Transfer(0x0, _to, _amount);
-
-        return true;
-    }
-
-    function burn(address _from, uint256 _amount) onlyOwner public returns (bool) {
-        require(!mintingFinished);
-        require(_amount > 0);
-        require(_amount <= balances[_from]);
-
-        totalSupply = totalSupply.sub(_amount);
-        balances[_from] = balances[_from].sub(_amount);
-        Burn(_from, _amount);
-        Transfer(_from, 0x0, _amount);
 
         return true;
     }
