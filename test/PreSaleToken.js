@@ -25,9 +25,43 @@ contract('PreSaleToken', accounts => {
       const token = await PreSaleToken.new({from: owner})
       await expect(token.transferOwnership('0x0000000000000000000000000000000000000000', {from: owner})).to.be.rejectedWith(evm.Throw)
     })
+
+    it(`should fire OwnershipTransferred event on ownership change`, async () => {
+      const [owner, nonOwner] = accounts
+      const token = await PreSaleToken.new({from: owner})
+      const {logs} = await expect(token.transferOwnership(nonOwner, {from: owner})).to.be.fulfilled
+      expect(logs.find(e => e.event === 'OwnershipTransferred')).to.exist
+    })
   })
 
   describe('minting', () => {
+    describe('finishing', () => {
+      describe(`by non-owner`, () => {
+        it(`should not be possible`, async () => {
+          const [owner, nonOwner] = accounts
+          const token = await PreSaleToken.new({from: owner})
+          await expect(token.finishMinting({from: nonOwner})).to.be.rejectedWith(evm.Throw)
+        })
+      })
+
+      describe(`by owner`, () => {
+        it(`should set mintingFinished flag`, async () => {
+          const [owner] = accounts
+          const token = await PreSaleToken.new({from: owner})
+          await expect(token.mintingFinished.call()).to.eventually.equal(false)
+          await expect(token.finishMinting({from: owner})).to.be.fulfilled
+          await expect(token.mintingFinished.call()).to.eventually.equal(true)
+        })
+
+        it(`should fire MintFinished event`, async () => {
+          const [owner] = accounts
+          const token = await PreSaleToken.new({from: owner})
+          const {logs} = await expect(token.finishMinting({from: owner})).to.be.fulfilled
+          expect(logs.find(e => e.event === 'MintFinished')).to.exist
+        })
+      })
+    })
+
     it(`should not be allowed by non-owner`, async () => {
       const [owner, nonOwner] = accounts
       const token = await PreSaleToken.new({from: owner})
@@ -42,6 +76,20 @@ contract('PreSaleToken', accounts => {
       await token.mint(recipient, 42, {from: owner})
       await expect(token.balanceOf.call(recipient)).to.eventually.bignumber.equal(42)
       await expect(token.totalSupply.call()).to.eventually.bignumber.equal(42)
+    })
+
+    it(`should fire Mint event`, async () => {
+      const [owner, recipient] = accounts
+      const token = await PreSaleToken.new({from: owner})
+      const {logs} = await expect(token.mint(recipient, 42, {from: owner})).to.be.fulfilled
+      expect(logs.find(e => e.event === 'Mint')).to.exist
+    })
+
+    it(`should fire Transfer event`, async () => {
+      const [owner, recipient] = accounts
+      const token = await PreSaleToken.new({from: owner})
+      const {logs} = await expect(token.mint(recipient, 42, {from: owner})).to.be.fulfilled
+      expect(logs.find(e => e.event === 'Transfer')).to.exist
     })
 
     it(`should not allow 0 tokens to be minted`, async () => {
@@ -81,6 +129,22 @@ contract('PreSaleToken', accounts => {
       const token = await PreSaleToken.new({from: owner})
       await token.mint(owner, 100, {from: owner})
       await token.burn(owner, 50, {from: owner})
+    })
+
+    it(`should fire Burn event`, async () => {
+      const [owner] = accounts
+      const token = await PreSaleToken.new({from: owner})
+      await token.mint(owner, 100, {from: owner})
+      const {logs} = await expect(token.burn(owner, 50, {from: owner})).to.be.fulfilled
+      expect(logs.find(e => e.event === 'Burn')).to.exist
+    })
+
+    it(`should fire Transfer event`, async () => {
+      const [owner] = accounts
+      const token = await PreSaleToken.new({from: owner})
+      await token.mint(owner, 100, {from: owner})
+      const {logs} = await expect(token.burn(owner, 50, {from: owner})).to.be.fulfilled
+      expect(logs.find(e => e.event === 'Transfer')).to.exist
     })
 
     it(`should be limited by account balance`, async () => {

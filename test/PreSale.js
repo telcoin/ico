@@ -61,6 +61,13 @@ contract('PreSale', accounts => {
       const sale = await createPreSale({owner, wallet})
       await expect(sale.transferOwnership(evm.ZERO, {from: owner})).to.be.rejectedWith(evm.Throw)
     })
+
+    it(`should fire OwnershipTransferred event on ownership change`, async () => {
+      const [owner, nonOwner, wallet] = accounts
+      const sale = await createPreSale({owner, wallet})
+      const {logs} = await expect(sale.transferOwnership(nonOwner, {from: owner})).to.be.fulfilled
+      expect(logs.find(e => e.event === 'OwnershipTransferred')).to.exist
+    })
   })
 
   describe('token', () => {
@@ -118,6 +125,21 @@ contract('PreSale', accounts => {
         await expect(sale.unpause({from: owner})).to.be.fulfilled
         await expect(sale.paused.call()).to.eventually.equal(false)
       })
+
+      it(`should fire Pause event when paused`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        const {logs} = await expect(sale.pause({from: owner})).to.be.fulfilled
+        expect(logs.find(e => e.event === 'Pause')).to.exist
+      })
+
+      it(`should fire Unpause event when unpaused`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.pause({from: owner})).to.be.fulfilled
+        const {logs} = await expect(sale.unpause({from: owner})).to.be.fulfilled
+        expect(logs.find(e => e.event === 'Unpause')).to.exist
+      })
     })
   })
 
@@ -159,6 +181,15 @@ contract('PreSale', accounts => {
         await expect(sale.whitelisted.call(investor)).to.eventually.equal(false)
       })
 
+      it(`should fire Whitelisted event`, async () => {
+        const [owner, wallet, investor] = accounts
+        const sale = await createPreSale({owner, wallet})
+        const {logs: logs1} = await expect(sale.whitelist(investor, true, {from: owner})).to.be.fulfilled
+        expect(logs1.find(e => e.event === 'Whitelisted')).to.exist
+        const {logs: logs2} = await expect(sale.whitelist(investor, false, {from: owner})).to.be.fulfilled
+        expect(logs2.find(e => e.event === 'Whitelisted')).to.exist
+      })
+
       it(`should not allow whitelisting an already whitelisted address`, async () => {
         const [owner, wallet, investor] = accounts
         const sale = await createPreSale({owner, wallet})
@@ -170,6 +201,14 @@ contract('PreSale', accounts => {
         const [owner, wallet, investor] = accounts
         const sale = await createPreSale({owner, wallet})
         await expect(sale.whitelist(investor, false, {from: owner})).to.be.rejectedWith(evm.Throw)
+      })
+
+      it(`should fire Whitelisted event`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.pause({from: owner})).to.be.fulfilled
+        const {logs} = await expect(sale.unpause({from: owner})).to.be.fulfilled
+        expect(logs.find(e => e.event === 'Unpause')).to.exist
       })
     })
   })
@@ -293,6 +332,18 @@ contract('PreSale', accounts => {
             await sale.buyTokens(investor, {value: wei(49), from: investor})
             await expect(sale.investors.call(0)).to.eventually.equal(investor)
           })
+
+          it(`should fire TokenPurchase event`, async () => {
+            const [owner, wallet, investor] = accounts
+            const sale = await createPreSale({owner, wallet})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await sale.whitelist(investor, true, {from: owner})
+            const {logs: logs1} = await sale.sendTransaction({value: wei(16), from: investor})
+            expect(logs1.find(e => e.event === 'TokenPurchase')).to.exist
+            const {logs: logs2} = await sale.buyTokens(investor, {value: wei(49), from: investor})
+            expect(logs2.find(e => e.event === 'TokenPurchase')).to.exist
+          })
         })
       })
     })
@@ -344,6 +395,28 @@ contract('PreSale', accounts => {
             await expect(sale.refunding.call()).to.eventually.equal(true)
           })
 
+          it(`should fire Finalized event`, async () => {
+            const [owner, wallet] = accounts
+            const sale = await createPreSale({owner, wallet, goal: wei(100)})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            const {logs} = await expect(sale.finish({from: owner})).to.be.fulfilled
+            expect(logs.find(e => e.event === 'Finalized')).to.exist
+          })
+
+          it(`should fire Refunding event`, async () => {
+            const [owner, wallet] = accounts
+            const sale = await createPreSale({owner, wallet, goal: wei(100)})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            const {logs} = await expect(sale.finish({from: owner})).to.be.fulfilled
+            expect(logs.find(e => e.event === 'Refunding')).to.exist
+          })
+
           it(`should not transfer balance to wallet`, async () => {
             const [owner, wallet] = accounts
             const sale = await createPreSale({owner, wallet, goal: wei(100)})
@@ -384,6 +457,32 @@ contract('PreSale', accounts => {
             await expect(sale.finished.call()).to.eventually.equal(false)
             await expect(sale.finish({from: owner})).to.be.fulfilled
             await expect(sale.finished.call()).to.eventually.equal(true)
+          })
+
+          it(`should fire Finalized event`, async () => {
+            const [owner, wallet, investor] = accounts
+            const sale = await createPreSale({owner, wallet, goal: wei(100)})
+            await sale.whitelist(investor, true, {from: owner})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await sale.buyTokens(investor, {value: wei(100), from: investor})
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            const {logs} = await expect(sale.finish({from: owner})).to.be.fulfilled
+            expect(logs.find(e => e.event === 'Finalized')).to.exist
+          })
+
+          it(`should not fire Refunding event`, async () => {
+            const [owner, wallet, investor] = accounts
+            const sale = await createPreSale({owner, wallet, goal: wei(100)})
+            await sale.whitelist(investor, true, {from: owner})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await sale.buyTokens(investor, {value: wei(100), from: investor})
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            const {logs} = await expect(sale.finish({from: owner})).to.be.fulfilled
+            expect(logs.find(e => e.event === 'Refunding')).to.not.exist
           })
 
           it(`should not set refunding flag`, async () => {
@@ -521,6 +620,21 @@ contract('PreSale', accounts => {
           await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(sent)
           await expect(sale.refund(investor, {from: investor})).to.be.fulfilled
           await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(0)
+        })
+
+        it(`should fire Refunded event`, async () => {
+          const [owner, wallet, investor] = accounts
+          const sale = await createPreSale({owner, wallet, goal: wei(100)})
+          const sent = wei(15)
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await sale.whitelist(investor, true, {from: owner})
+          await sale.buyTokens(investor, {value: sent, from: investor})
+          const endTime = await sale.endTime.call()
+          await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+          await expect(sale.finish({from: owner})).to.be.fulfilled
+          const {logs} = await expect(sale.refund(investor, {from: investor})).to.be.fulfilled
+          expect(logs.find(e => e.event === 'Refunded')).to.exist
         })
 
         it(`should not be possible if deposit is 0`, async () => {
