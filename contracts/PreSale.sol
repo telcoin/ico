@@ -122,6 +122,7 @@ contract PreSale {
         require(now > endTime);
 
         finished = true;
+        token.finishMinting();
 
         if (weiRaised >= goal) {
             wallet.transfer(this.balance);

@@ -442,6 +442,19 @@ contract('PreSale', accounts => {
             const balanceAfter = await evm.getBalance(sale.address)
             expect(balanceAfter.minus(balanceBefore)).to.bignumber.equal(0)
           })
+
+          it(`should finish token minting`, async () => {
+            const [owner, wallet] = accounts
+            const sale = await createPreSale({owner, wallet, goal: wei(100)})
+            const token = PreSaleToken.at(await sale.token.call())
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            await expect(token.mintingFinished.call()).to.eventually.equal(false)
+            await expect(sale.finish({from: owner})).to.be.fulfilled
+            await expect(token.mintingFinished.call()).to.eventually.equal(true)
+          })
         })
 
         describe(`when goal has been reached`, () => {
@@ -517,6 +530,22 @@ contract('PreSale', accounts => {
             const saleBalanceAfter = await evm.getBalance(sale.address)
             expect(walletBalanceAfter.minus(walletBalanceBefore)).to.bignumber.equal(goal)
             expect(saleBalanceAfter).to.bignumber.equal(0)
+          })
+
+          it(`should finish token minting`, async () => {
+            const [owner, wallet, investor] = accounts
+            const goal = wei(100)
+            const sale = await createPreSale({owner, wallet, goal})
+            const token = PreSaleToken.at(await sale.token.call())
+            await sale.whitelist(investor, true, {from: owner})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await sale.buyTokens(investor, {value: goal, from: investor})
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            await expect(token.mintingFinished.call()).to.eventually.equal(false)
+            await expect(sale.finish({from: owner})).to.be.fulfilled
+            await expect(token.mintingFinished.call()).to.eventually.equal(true)
           })
         })
 
