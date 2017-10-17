@@ -349,6 +349,85 @@ contract('PreSale', accounts => {
     })
   })
 
+  describe(`withdrawals`, () => {
+    describe(`by non-owner`, () => {
+      it(`should not be possible`, async () => {
+        const [owner, wallet, nonOwner, investor] = accounts
+        const sale = await createPreSale({owner, wallet, goal: wei(333)})
+        const startTime = await sale.startTime.call()
+        await evm.increaseTimeTo(startTime.toNumber())
+        await sale.whitelist(investor, true, {from: owner})
+        await expect(sale.sendTransaction({value: wei(333), from: investor})).to.be.fulfilled
+        await expect(sale.withdraw({from: nonOwner})).to.be.rejectedWith(evm.Throw)
+      })
+    })
+
+    describe(`by owner`, () => {
+      describe(`when goal has not been reached`, () => {
+        it(`should not be possible`, async () => {
+          const [owner, wallet, investor] = accounts
+          const sale = await createPreSale({owner, wallet, goal: wei(333)})
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await sale.whitelist(investor, true, {from: owner})
+          await expect(sale.sendTransaction({value: wei(332), from: investor})).to.be.fulfilled
+          await expect(sale.withdraw({from: owner})).to.be.rejectedWith(evm.Throw)
+        })
+      })
+
+      describe(`when goal has been reached`, () => {
+        it(`should transfer current balance to the wallet`, async () => {
+          const [owner, wallet, investor] = accounts
+          const sale = await createPreSale({owner, wallet, goal: wei(333)})
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await sale.whitelist(investor, true, {from: owner})
+          await expect(sale.sendTransaction({value: wei(333), from: investor})).to.be.fulfilled
+          const walletBalanceBefore = await evm.getBalance(wallet)
+          await expect(sale.withdraw({from: owner})).to.be.fulfilled
+          const walletBalanceAfter = await evm.getBalance(wallet)
+          expect(walletBalanceAfter.minus(walletBalanceBefore)).to.bignumber.equal(wei(333))
+        })
+
+        it(`should should not change weiRaised`, async () => {
+          const [owner, wallet, investor] = accounts
+          const sale = await createPreSale({owner, wallet, goal: wei(333)})
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await sale.whitelist(investor, true, {from: owner})
+          await expect(sale.sendTransaction({value: wei(333), from: investor})).to.be.fulfilled
+          const weiRaisedBefore = await expect(sale.weiRaised.call()).to.be.fulfilled
+          await expect(sale.withdraw({from: owner})).to.be.fulfilled
+          const weiRaisedAfter = await expect(sale.weiRaised.call()).to.be.fulfilled
+          expect(weiRaisedAfter.minus(weiRaisedBefore)).to.bignumber.equal(0)
+        })
+
+        it(`should fire Withdrawal event if any balance left`, async () => {
+          const [owner, wallet, investor] = accounts
+          const sale = await createPreSale({owner, wallet, goal: wei(333)})
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await sale.whitelist(investor, true, {from: owner})
+          await expect(sale.sendTransaction({value: wei(333), from: investor})).to.be.fulfilled
+          const {logs} = await expect(sale.withdraw({from: owner})).to.be.fulfilled
+          expect(logs.find(e => e.event === 'Withdrawal')).to.exist
+        })
+
+        it(`should not fire Withdrawal event if no balance left`, async () => {
+          const [owner, wallet, investor] = accounts
+          const sale = await createPreSale({owner, wallet, goal: wei(333)})
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await sale.whitelist(investor, true, {from: owner})
+          await expect(sale.sendTransaction({value: wei(333), from: investor})).to.be.fulfilled
+          await expect(sale.withdraw({from: owner})).to.be.fulfilled
+          const {logs} = await expect(sale.withdraw({from: owner})).to.be.fulfilled
+          expect(logs.find(e => e.event === 'Withdrawal')).to.not.exist
+        })
+      })
+    })
+  })
+
   describe(`finishing`, () => {
     describe(`by non-owner`, () => {
       it(`should not be possible`, async () => {
@@ -546,6 +625,35 @@ contract('PreSale', accounts => {
             await expect(token.mintingFinished.call()).to.eventually.equal(false)
             await expect(sale.finish({from: owner})).to.be.fulfilled
             await expect(token.mintingFinished.call()).to.eventually.equal(true)
+          })
+
+          it(`should fire Withdrawal event if any balance left`, async () => {
+            const [owner, wallet, investor] = accounts
+            const goal = wei(100)
+            const sale = await createPreSale({owner, wallet, goal})
+            await sale.whitelist(investor, true, {from: owner})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await sale.buyTokens(investor, {value: goal, from: investor})
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            const {logs} = await expect(sale.finish({from: owner})).to.be.fulfilled
+            expect(logs.find(e => e.event === 'Withdrawal')).to.exist
+          })
+
+          it(`should not fire Withdrawal event no balance left`, async () => {
+            const [owner, wallet, investor] = accounts
+            const goal = wei(100)
+            const sale = await createPreSale({owner, wallet, goal})
+            await sale.whitelist(investor, true, {from: owner})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await sale.buyTokens(investor, {value: goal, from: investor})
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            await expect(sale.withdraw({from: owner})).to.be.fulfilled
+            const {logs} = await expect(sale.finish({from: owner})).to.be.fulfilled
+            expect(logs.find(e => e.event === 'Withdrawal')).to.not.exist
           })
         })
 

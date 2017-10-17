@@ -10,6 +10,7 @@ contract PreSale {
     event TokenPurchase(address indexed purchaser, address indexed beneficiary, uint256 value, uint256 amount);
     event Pause();
     event Unpause();
+    event Withdrawal(address indexed wallet, uint256 weiAmount);
     event Finalized();
     event Refunding();
     event Refunded(address indexed beneficiary, uint256 weiAmount);
@@ -124,14 +125,25 @@ contract PreSale {
         finished = true;
         token.finishMinting();
 
-        if (weiRaised >= goal) {
-            wallet.transfer(this.balance);
+        if (goalReached()) {
+            withdraw();
         } else {
             refunding = true;
             Refunding();
         }
 
         Finalized();
+    }
+
+    function withdraw() onlyOwner public {
+        require(goalReached());
+
+        uint256 weiAmount = this.balance;
+
+        if (weiAmount > 0) {
+            wallet.transfer(weiAmount);
+            Withdrawal(wallet, weiAmount);
+        }
     }
 
     function pause() onlyOwner public {
@@ -172,5 +184,9 @@ contract PreSale {
 
         whitelisted[_participant] = _allowed;
         Whitelisted(_participant, _allowed);
+    }
+
+    function goalReached() public constant returns (bool) {
+        return weiRaised >= goal;
     }
 }
