@@ -1,6 +1,9 @@
-.PHONY: default test
+.PHONY: default build test
 
-default: test
+default: build
+
+build:
+	./node_modules/.bin/truffle compile
 
 test:
 	./node_modules/.bin/truffle test
