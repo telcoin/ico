@@ -287,11 +287,11 @@ contract('PreSale', accounts => {
           const sale = await createPreSale({owner, wallet})
           const startTime = await sale.startTime.call()
           await evm.increaseTimeTo(startTime.toNumber())
-          await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(0)
+          await expect(sale.deposited.call(investor)).to.eventually.bignumber.equal(0)
           await sale.whitelist(investor, ether(1), {from: owner})
           await sale.sendTransaction({value: wei(16), from: investor})
           await sale.buyTokens(investor, {value: wei(49), from: investor})
-          await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(wei(65))
+          await expect(sale.deposited.call(investor)).to.eventually.bignumber.equal(wei(65))
         })
 
         it(`should not be allowed if over whitelisted amount`, async () => {
@@ -737,9 +737,9 @@ contract('PreSale', accounts => {
           const endTime = await sale.endTime.call()
           await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
           await expect(sale.finish({from: owner})).to.be.fulfilled
-          await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(sent)
+          await expect(sale.deposited.call(investor)).to.eventually.bignumber.equal(sent)
           await expect(sale.refund(investor, {from: investor})).to.be.fulfilled
-          await expect(sale.depositOf.call(investor)).to.eventually.bignumber.equal(0)
+          await expect(sale.deposited.call(investor)).to.eventually.bignumber.equal(0)
         })
 
         it(`should fire Refunded event`, async () => {

@@ -47,7 +47,7 @@ contract PreSale {
     mapping(address => uint256) public whitelisted;
 
     /// The amount of wei invested by each investor.
-    mapping(address => uint256) deposited;
+    mapping(address => uint256) public deposited;
 
     /// An enumerable list of investors.
     address[] public investors;
@@ -115,10 +115,6 @@ contract PreSale {
 
         token.mint(_beneficiary, tokens);
         TokenPurchase(msg.sender, _beneficiary, weiAmount, tokens);
-    }
-
-    function depositOf(address _owner) public constant returns (uint256) {
-        return deposited[_owner];
     }
 
     function finish() onlyOwner public {
