@@ -14,7 +14,7 @@ contract PreSale {
     event Finalized();
     event Refunding();
     event Refunded(address indexed beneficiary, uint256 weiAmount);
-    event Whitelisted(address indexed participant, bool allowed);
+    event Whitelisted(address indexed participant, uint256 weiAmount);
 
     /// The owner of the contract.
     address public owner;
@@ -42,8 +42,9 @@ contract PreSale {
     /// finishes and the minimum goal is met.
     address public wallet;
 
-    /// The list of addresses that are allowed to participate in the sale.
-    mapping(address => bool) public whitelisted;
+    /// The list of addresses that are allowed to participate in the sale,
+    /// and up to what amount.
+    mapping(address => uint256) public whitelisted;
 
     /// The amount of wei invested by each investor.
     mapping(address => uint256) deposited;
@@ -98,14 +99,16 @@ contract PreSale {
 
     function buyTokens(address _beneficiary) saleOpen public payable {
         require(_beneficiary != address(0));
-        require(whitelisted[_beneficiary]);
-        require(whitelisted[msg.sender]);
         require(msg.value > 0);
 
         uint256 weiAmount = msg.value;
+        uint256 newDeposited = deposited[_beneficiary].add(weiAmount);
+
+        require(newDeposited <= whitelisted[_beneficiary]);
+
         uint256 tokens = weiAmount.mul(rate);
 
-        deposited[_beneficiary] = deposited[_beneficiary].add(weiAmount);
+        deposited[_beneficiary] = newDeposited;
         investors.push(_beneficiary);
 
         weiRaised = weiRaised.add(weiAmount);
@@ -178,12 +181,11 @@ contract PreSale {
         owner = _to;
     }
 
-    function whitelist(address _participant, bool _allowed) onlyOwner public {
+    function whitelist(address _participant, uint256 _weiAmount) onlyOwner public {
         require(_participant != 0x0);
-        require(whitelisted[_participant] != _allowed);
 
-        whitelisted[_participant] = _allowed;
-        Whitelisted(_participant, _allowed);
+        whitelisted[_participant] = _weiAmount;
+        Whitelisted(_participant, _weiAmount);
     }
 
     function goalReached() public constant returns (bool) {
