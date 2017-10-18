@@ -125,6 +125,7 @@ contract PreSale {
         token.finishMinting();
 
         if (goalReached()) {
+            token.transferOwnership(owner);
             withdraw();
         } else {
             refunding = true;

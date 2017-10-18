@@ -114,5 +114,209 @@ contract('PreSaleToken', accounts => {
       await token.finishMinting({from: owner})
       await expect(token.mint(owner, 10000, {from: owner})).to.be.rejectedWith(evm.Throw)
     })
+
+    it(`should not let mint for 0x0`, async () => {
+      const [owner] = accounts
+      const token = await PreSaleToken.new({from: owner})
+      await expect(token.mint(0x0, 10000, {from: owner})).to.be.rejectedWith(evm.Throw)
+    })
+  })
+
+  describe('exchanging', () => {
+    describe('exchangers', () => {
+      describe(`by non-owner`, () => {
+        it(`should not let add new exchangers`, async () => {
+          const [owner, nonOwner, recipient, exchanger] = accounts
+          const token = await PreSaleToken.new({from: owner})
+          await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+          await expect(token.finishMinting({from: owner})).to.be.fulfilled
+          await expect(token.allowExchanger(exchanger, {from: nonOwner})).to.be.rejectedWith(evm.Throw)
+        })
+
+        it(`should not let revoke exchangers`, async () => {
+          const [owner, nonOwner, recipient, exchanger] = accounts
+          const token = await PreSaleToken.new({from: owner})
+          await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+          await expect(token.finishMinting({from: owner})).to.be.fulfilled
+          await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+          await expect(token.revokeExchanger(exchanger, {from: nonOwner})).to.be.rejectedWith(evm.Throw)
+        })
+      })
+
+      describe(`by owner`, () => {
+        describe(`before minting has finished`, () => {
+          it(`should not let add new exchangers`, async () => {
+            const [owner, recipient, exchanger] = accounts
+            const token = await PreSaleToken.new({from: owner})
+            await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+            await expect(token.allowExchanger(exchanger, {from: owner})).to.be.rejectedWith(evm.Throw)
+          })
+        })
+
+        describe(`after minting has finished`, () => {
+          it(`should let add new exchangers`, async () => {
+            const [owner, recipient, exchanger] = accounts
+            const token = await PreSaleToken.new({from: owner})
+            await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+            await expect(token.finishMinting({from: owner})).to.be.fulfilled
+            await expect(token.exchangers.call(exchanger)).to.eventually.equal(false)
+            await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+            await expect(token.exchangers.call(exchanger)).to.eventually.equal(true)
+          })
+
+          it(`should fire AllowExchanger event when exchanger added`, async () => {
+            const [owner, recipient, exchanger] = accounts
+            const token = await PreSaleToken.new({from: owner})
+            await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+            await expect(token.finishMinting({from: owner})).to.be.fulfilled
+            const {logs} = await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+            expect(logs.find(e => e.event === 'AllowExchanger')).to.exist
+          })
+
+          it(`should not allow exchanger to be added twice`, async () => {
+            const [owner, recipient, exchanger] = accounts
+            const token = await PreSaleToken.new({from: owner})
+            await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+            await expect(token.finishMinting({from: owner})).to.be.fulfilled
+            await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+            await expect(token.allowExchanger(exchanger, {from: owner})).to.be.rejectedWith(evm.Throw)
+          })
+
+          it(`should not let 0x0 to be added as an exchanger`, async () => {
+            const [owner, recipient] = accounts
+            const token = await PreSaleToken.new({from: owner})
+            await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+            await expect(token.finishMinting({from: owner})).to.be.fulfilled
+            await expect(token.allowExchanger(evm.ZERO, {from: owner})).to.be.rejectedWith(evm.Throw)
+          })
+
+          it(`should let revoke exchangers`, async () => {
+            const [owner, recipient, exchanger] = accounts
+            const token = await PreSaleToken.new({from: owner})
+            await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+            await expect(token.finishMinting({from: owner})).to.be.fulfilled
+            await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+            await expect(token.revokeExchanger(exchanger, {from: owner})).to.be.fulfilled
+            await expect(token.exchangers.call(exchanger)).to.eventually.equal(false)
+          })
+
+          it(`should fire RevokeExchanger event when exchanger revoked`, async () => {
+            const [owner, recipient, exchanger] = accounts
+            const token = await PreSaleToken.new({from: owner})
+            await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+            await expect(token.finishMinting({from: owner})).to.be.fulfilled
+            await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+            const {logs} = await expect(token.revokeExchanger(exchanger, {from: owner})).to.be.fulfilled
+            expect(logs.find(e => e.event === 'RevokeExchanger')).to.exist
+          })
+
+          it(`should not allow non-exchanger to be revoked`, async () => {
+            const [owner, recipient, exchanger, other] = accounts
+            const token = await PreSaleToken.new({from: owner})
+            await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+            await expect(token.finishMinting({from: owner})).to.be.fulfilled
+            await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+            await expect(token.revokeExchanger(other, {from: owner})).to.be.rejectedWith(evm.Throw)
+          })
+        })
+      })
+    })
+
+    describe(`by non-exchanger`, () => {
+      it(`should not be possible`, async () => {
+        const [owner, nonOwner, recipient, exchanger] = accounts
+        const token = await PreSaleToken.new({from: owner})
+        await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+        await expect(token.finishMinting({from: owner})).to.be.fulfilled
+        await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+        await expect(token.exchange(recipient, 33, 'FOO', 75, {from: nonOwner})).to.be.rejectedWith(evm.Throw)
+      })
+    })
+
+    describe(`by exchanger`, () => {
+      describe(`before minting has finished`, () => {
+        it(`should not be possible`, async () => {
+          const [owner, recipient, exchanger] = accounts
+          const token = await PreSaleToken.new({from: owner})
+          await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+          await expect(token.allowExchanger(exchanger, {from: owner})).to.be.rejectedWith(evm.Throw)
+          await expect(token.exchange(recipient, 33, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Throw)
+        })
+      })
+
+      describe(`after minting has finished`, () => {
+        it(`should transfer tokens to the exchanger address`, async () => {
+          const [owner, recipient, exchanger] = accounts
+          const token = await PreSaleToken.new({from: owner})
+          await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+          await expect(token.finishMinting({from: owner})).to.be.fulfilled
+          await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+          await expect(token.balanceOf.call(recipient)).to.eventually.bignumber.equal(100)
+          await expect(token.balanceOf.call(exchanger)).to.eventually.bignumber.equal(0)
+          await expect(token.exchange(recipient, 33, 'FOO', 75, {from: exchanger})).to.be.fulfilled
+          await expect(token.balanceOf.call(recipient)).to.eventually.bignumber.equal(67)
+          await expect(token.balanceOf.call(exchanger)).to.eventually.bignumber.equal(33)
+        })
+
+        it(`should fire Exchange event`, async () => {
+          const [owner, recipient, exchanger] = accounts
+          const token = await PreSaleToken.new({from: owner})
+          await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+          await expect(token.finishMinting({from: owner})).to.be.fulfilled
+          await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+          const {logs} = await expect(token.exchange(recipient, 33, 'FOO', 75, {from: exchanger})).to.be.fulfilled
+          expect(logs.find(e => e.event === 'Exchange')).to.exist
+        })
+
+        it(`should fire Transfer event`, async () => {
+          const [owner, recipient, exchanger] = accounts
+          const token = await PreSaleToken.new({from: owner})
+          await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+          await expect(token.finishMinting({from: owner})).to.be.fulfilled
+          await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+          const {logs} = await expect(token.exchange(recipient, 33, 'FOO', 75, {from: exchanger})).to.be.fulfilled
+          expect(logs.find(e => e.event === 'Transfer')).to.exist
+        })
+
+        it(`should not let transfer to another exchanger`, async () => {
+          const [owner, exchanger, otherExchanger] = accounts
+          const token = await PreSaleToken.new({from: owner})
+          await expect(token.mint(otherExchanger, 100, {from: owner})).to.be.fulfilled
+          await expect(token.finishMinting({from: owner})).to.be.fulfilled
+          await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+          await expect(token.allowExchanger(otherExchanger, {from: owner})).to.be.fulfilled
+          await expect(token.exchange(otherExchanger, 33, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Throw)
+        })
+
+        it(`should not allow 0 amount to be exchanged`, async () => {
+          const [owner, recipient, exchanger] = accounts
+          const token = await PreSaleToken.new({from: owner})
+          await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+          await expect(token.finishMinting({from: owner})).to.be.fulfilled
+          await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+          await expect(token.exchange(recipient, 0, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Throw)
+        })
+
+        it(`should not allow more than available balance to be exchanged`, async () => {
+          const [owner, recipient, exchanger] = accounts
+          const token = await PreSaleToken.new({from: owner})
+          await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+          await expect(token.finishMinting({from: owner})).to.be.fulfilled
+          await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+          await expect(token.exchange(recipient, 101, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Throw)
+        })
+
+        it(`should not change total supply`, async () => {
+          const [owner, recipient, exchanger] = accounts
+          const token = await PreSaleToken.new({from: owner})
+          await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
+          await expect(token.finishMinting({from: owner})).to.be.fulfilled
+          await expect(token.totalSupply.call()).to.eventually.bignumber.equal(100)
+          await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
+          await expect(token.exchange(recipient, 33, 'FOO', 75, {from: exchanger})).to.be.fulfilled
+          await expect(token.totalSupply.call()).to.eventually.bignumber.equal(100)
+        })
+      })
+    })
   })
 })

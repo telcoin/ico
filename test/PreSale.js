@@ -517,6 +517,19 @@ contract('PreSale', accounts => {
             await expect(sale.finish({from: owner})).to.be.fulfilled
             await expect(token.mintingFinished.call()).to.eventually.equal(true)
           })
+
+          it(`should not transfer ownership of token`, async () => {
+            const [owner, wallet] = accounts
+            const sale = await createPreSale({owner, wallet, goal: wei(100)})
+            const token = PreSaleToken.at(await sale.token.call())
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            await expect(token.owner.call()).to.eventually.equal(sale.address)
+            await expect(sale.finish({from: owner})).to.be.fulfilled
+            await expect(token.owner.call()).to.eventually.equal(sale.address)
+          })
         })
 
         describe(`when goal has been reached`, () => {
@@ -608,6 +621,21 @@ contract('PreSale', accounts => {
             await expect(token.mintingFinished.call()).to.eventually.equal(false)
             await expect(sale.finish({from: owner})).to.be.fulfilled
             await expect(token.mintingFinished.call()).to.eventually.equal(true)
+          })
+
+          it(`should transfer ownership of token to sale owner`, async () => {
+            const [owner, wallet, investor] = accounts
+            const sale = await createPreSale({owner, wallet, goal: wei(100)})
+            const token = PreSaleToken.at(await sale.token.call())
+            await sale.whitelist(investor, ether(1), {from: owner})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            await sale.buyTokens(investor, {value: wei(200), from: investor})
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            await expect(token.owner.call()).to.eventually.equal(sale.address)
+            await expect(sale.finish({from: owner})).to.be.fulfilled
+            await expect(token.owner.call()).to.eventually.equal(owner)
           })
 
           it(`should fire Withdrawal event if any balance left`, async () => {
