@@ -22,6 +22,10 @@ contract PreSaleToken {
     /// The token balance of each address.
     mapping(address => uint256) balances;
 
+    /// The full list of addresses we have minted tokens for, stored for
+    /// exchange purposes.
+    address[] public recipients;
+
     /// Whether the token is still mintable.
     bool public mintingFinished = false;
 
@@ -83,6 +87,7 @@ contract PreSaleToken {
 
         totalSupply = totalSupply.add(_amount);
         balances[_to] = balances[_to].add(_amount);
+        recipients.push(_to);
         Mint(_to, _amount);
         Transfer(0x0, _to, _amount);
 
