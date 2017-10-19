@@ -43,17 +43,13 @@ contract PreSaleToken {
         owner = msg.sender;
     }
 
-    function mint(address _to, uint256 _amount) onlyOwner public returns (bool) {
-        require(_to != 0x0);
-        require(!mintingFinished);
-        require(_amount > 0);
+    function allowExchanger(address _exchanger) onlyOwner public {
+        require(mintingFinished);
+        require(_exchanger != 0x0);
+        require(!exchangers[_exchanger]);
 
-        totalSupply = totalSupply.add(_amount);
-        balances[_to] = balances[_to].add(_amount);
-        Mint(_to, _amount);
-        Transfer(0x0, _to, _amount);
-
-        return true;
+        exchangers[_exchanger] = true;
+        AllowExchanger(_exchanger);
     }
 
     function exchange(address _from, uint256 _amount, string _symbol, uint256 _grantedValue) onlyExchanger public returns (bool) {
@@ -80,19 +76,17 @@ contract PreSaleToken {
         return true;
     }
 
-    function transferOwnership(address _to) onlyOwner public {
-        require(_to != address(0));
-        OwnershipTransferred(owner, _to);
-        owner = _to;
-    }
+    function mint(address _to, uint256 _amount) onlyOwner public returns (bool) {
+        require(_to != 0x0);
+        require(!mintingFinished);
+        require(_amount > 0);
 
-    function allowExchanger(address _exchanger) onlyOwner public {
-        require(mintingFinished);
-        require(_exchanger != 0x0);
-        require(!exchangers[_exchanger]);
+        totalSupply = totalSupply.add(_amount);
+        balances[_to] = balances[_to].add(_amount);
+        Mint(_to, _amount);
+        Transfer(0x0, _to, _amount);
 
-        exchangers[_exchanger] = true;
-        AllowExchanger(_exchanger);
+        return true;
     }
 
     function revokeExchanger(address _exchanger) onlyOwner public {
@@ -102,6 +96,12 @@ contract PreSaleToken {
 
         delete exchangers[_exchanger];
         RevokeExchanger(_exchanger);
+    }
+
+    function transferOwnership(address _to) onlyOwner public {
+        require(_to != address(0));
+        OwnershipTransferred(owner, _to);
+        owner = _to;
     }
 
     function balanceOf(address _owner) public constant returns (uint256) {

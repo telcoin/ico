@@ -135,27 +135,10 @@ contract PreSale {
         Finalized();
     }
 
-    function withdraw() onlyOwner public {
-        require(goalReached());
-
-        uint256 weiAmount = this.balance;
-
-        if (weiAmount > 0) {
-            wallet.transfer(weiAmount);
-            Withdrawal(wallet, weiAmount);
-        }
-    }
-
     function pause() onlyOwner public {
         require(!paused);
         paused = true;
         Pause();
-    }
-
-    function unpause() onlyOwner public {
-        require(paused);
-        paused = false;
-        Unpause();
     }
 
     function refund(address _investor) public {
@@ -178,11 +161,28 @@ contract PreSale {
         owner = _to;
     }
 
+    function unpause() onlyOwner public {
+        require(paused);
+        paused = false;
+        Unpause();
+    }
+
     function whitelist(address _participant, uint256 _weiAmount) onlyOwner public {
         require(_participant != 0x0);
 
         whitelisted[_participant] = _weiAmount;
         Whitelisted(_participant, _weiAmount);
+    }
+
+    function withdraw() onlyOwner public {
+        require(goalReached());
+
+        uint256 weiAmount = this.balance;
+
+        if (weiAmount > 0) {
+            wallet.transfer(weiAmount);
+            Withdrawal(wallet, weiAmount);
+        }
     }
 
     function goalReached() public constant returns (bool) {
