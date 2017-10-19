@@ -1,4 +1,4 @@
-.PHONY: default build lint test
+.PHONY: default build lint test coverage
 
 default: build
 
@@ -10,3 +10,6 @@ lint:
 
 test: lint
 	./node_modules/.bin/truffle test
+
+coverage: lint
+	./node_modules/.bin/solidity-coverage

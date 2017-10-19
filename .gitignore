@@ -1,3 +1,6 @@
 /build/
+/coverage.json
+/coverage/
+/coverageEnv/
 /node_modules/
 /temp/
