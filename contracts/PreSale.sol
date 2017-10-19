@@ -3,6 +3,7 @@ pragma solidity ^0.4.15;
 import './lib/SafeMath.sol';
 import './PreSaleToken.sol';
 
+
 contract PreSale {
     using SafeMath for uint256;
 
@@ -77,7 +78,15 @@ contract PreSale {
         _;
     }
 
-    function PreSale(uint256 _goal, uint256 _startTime, uint256 _endTime, uint256 _rate, address _wallet) payable {
+    function PreSale(
+        uint256 _goal,
+        uint256 _startTime,
+        uint256 _endTime,
+        uint256 _rate,
+        address _wallet
+    )
+        payable
+    {
         require(msg.value > 0);
         require(_goal > 0);
         require(_startTime >= now);
@@ -117,7 +126,12 @@ contract PreSale {
         weiRaised = weiRaised.add(weiAmount);
 
         token.mint(_beneficiary, tokens);
-        TokenPurchase(msg.sender, _beneficiary, weiAmount, tokens);
+        TokenPurchase(
+            msg.sender,
+            _beneficiary,
+            weiAmount,
+            tokens
+        );
     }
 
     function finish() onlyOwner public {
@@ -153,7 +167,13 @@ contract PreSale {
         deposited[_investor] = 0;
         weiRefunded = weiRefunded.add(weiAmount);
 
-        _investor.transfer(weiAmount);
+        // Work around a Solium linter bug by creating a variable that does
+        // not begin with an underscore. See [1] for more information.
+        //
+        // [1] https://github.com/duaraghav8/Solium/issues/116
+        address recipient = _investor;
+        recipient.transfer(weiAmount);
+
         Refunded(_investor, weiAmount);
     }
 

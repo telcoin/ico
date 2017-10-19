@@ -2,6 +2,7 @@ pragma solidity ^0.4.15;
 
 import './lib/SafeMath.sol';
 
+
 contract PreSaleToken {
     using SafeMath for uint256;
 
@@ -56,7 +57,16 @@ contract PreSaleToken {
         AllowExchanger(_exchanger);
     }
 
-    function exchange(address _from, uint256 _amount, string _symbol, uint256 _grantedValue) onlyExchanger public returns (bool) {
+    function exchange(
+        address _from,
+        uint256 _amount,
+        string _symbol,
+        uint256 _grantedValue
+    )
+        onlyExchanger
+        public
+        returns (bool)
+    {
         require(mintingFinished);
         require(_from != 0x0);
         require(!exchangers[_from]);
@@ -65,7 +75,12 @@ contract PreSaleToken {
 
         balances[_from] = balances[_from].sub(_amount);
         balances[msg.sender] = balances[msg.sender].add(_amount);
-        Exchange(_from, _amount, _symbol, _grantedValue);
+        Exchange(
+            _from,
+            _amount,
+            _symbol,
+            _grantedValue
+        );
         Transfer(_from, msg.sender, _amount);
 
         return true;
