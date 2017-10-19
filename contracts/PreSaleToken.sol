@@ -67,7 +67,7 @@ contract PreSaleToken {
         public
         returns (bool)
     {
-        require(mintingFinished);
+        require(mintingFinished); // Always true due to exchangers requiring the same condition
         require(_from != 0x0);
         require(!exchangers[_from]);
         require(_amount > 0);

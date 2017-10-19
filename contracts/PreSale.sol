@@ -71,10 +71,10 @@ contract PreSale {
     }
 
     modifier saleOpen() {
+        require(!finished);
+        require(!paused);
         require(now >= startTime);
         require(now <= endTime);
-        require(!paused);
-        require(!finished);
         _;
     }
 

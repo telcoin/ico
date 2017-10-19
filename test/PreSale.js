@@ -49,6 +49,38 @@ contract('PreSale', accounts => {
       await expect(createPreSale({owner, wallet, walletTestValue: wei(0)})).to.be.rejectedWith(evm.Throw)
       await expect(createPreSale({owner, wallet, walletTestValue: wei(1)})).to.be.fulfilled
     })
+
+    it(`should require a non-zero rate`, async () => {
+      const [owner, wallet] = accounts
+      await expect(createPreSale({owner, wallet, rate: 0})).to.be.rejectedWith(evm.Throw)
+      await expect(createPreSale({owner, wallet, rate: 1})).to.be.fulfilled
+    })
+
+    it(`should require a non-zero goal`, async () => {
+      const [owner, wallet] = accounts
+      await expect(createPreSale({owner, wallet, goal: wei(0)})).to.be.rejectedWith(evm.Throw)
+      await expect(createPreSale({owner, wallet, goal: wei(1)})).to.be.fulfilled
+    })
+
+    it(`should refuse 0x0 as wallet`, async () => {
+      const [owner, wallet] = accounts
+      await expect(createPreSale({owner, wallet: evm.ZERO})).to.be.rejectedWith(evm.Throw)
+      await expect(createPreSale({owner, wallet})).to.be.fulfilled
+    })
+
+    it(`should refuse a start time earlier than current time`, async () => {
+      const [owner, wallet] = accounts
+      const now = await evm.latestTime()
+      await expect(createPreSale({owner, wallet, startTime: now - duration.minutes(1)})).to.be.rejectedWith(evm.Throw)
+      await expect(createPreSale({owner, wallet, startTime: now + duration.minutes(1)})).to.be.fulfilled
+    })
+
+    it(`should refuse an end time earlier than start time`, async () => {
+      const [owner, wallet] = accounts
+      const now = await evm.latestTime()
+      await expect(createPreSale({owner, wallet, startTime: now + duration.minutes(10), endTime: now + duration.minutes(5)})).to.be.rejectedWith(evm.Throw)
+      await expect(createPreSale({owner, wallet, startTime: now + duration.minutes(10), endTime: now + duration.minutes(15)})).to.be.fulfilled
+    })
   })
 
   describe('ownership', () => {
@@ -135,6 +167,12 @@ contract('PreSale', accounts => {
         await expect(sale.paused.call()).to.eventually.equal(false)
       })
 
+      it(`should not be unpausable when not paused`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.unpause({from: owner})).to.be.rejectedWith(evm.Throw)
+      })
+
       it(`should fire Pause event when paused`, async () => {
         const [owner, wallet] = accounts
         const sale = await createPreSale({owner, wallet})
@@ -209,37 +247,80 @@ contract('PreSale', accounts => {
   describe('buying tokens', () => {
     describe(`before sale starts`, () => {
       it(`should not be possible`, async () => {
-        const [owner, wallet] = accounts
+        const [owner, wallet, investor] = accounts
         const sale = await createPreSale({owner, wallet})
-        await expect(sale.send(ether(1))).to.be.rejectedWith(evm.Throw)
-        await expect(sale.buyTokens(owner, {value: ether(1), from: owner})).to.be.rejectedWith(evm.Throw)
+        const startTime = await sale.startTime.call()
+        await expect(sale.whitelist(investor, ether(10), {from: owner}))
+        await expect(sale.sendTransaction({value: ether(1), from: investor})).to.be.rejectedWith(evm.Throw)
+        await expect(sale.buyTokens(investor, {value: ether(1), from: investor})).to.be.rejectedWith(evm.Throw)
+        await evm.increaseTimeTo(startTime.toNumber())
+        await expect(sale.buyTokens(investor, {value: ether(1), from: investor})).to.be.fulfilled
       })
     })
 
     describe(`after sale ends`, () => {
       it(`should not be possible`, async () => {
-        const [owner, wallet] = accounts
+        const [owner, wallet, investor] = accounts
         const sale = await createPreSale({owner, wallet})
+        const startTime = await sale.startTime.call()
+        await evm.increaseTimeTo(startTime.toNumber())
+        await expect(sale.whitelist(investor, ether(10), {from: owner}))
+        await expect(sale.sendTransaction({value: wei(1), from: investor})).to.be.fulfilled
         const endTime = await sale.endTime.call()
         await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
-        await expect(sale.send(ether(1))).to.be.rejectedWith(evm.Throw)
-        await expect(sale.buyTokens(owner, {value: ether(1), from: owner})).to.be.rejectedWith(evm.Throw)
+        await expect(sale.sendTransaction({value: wei(1), from: investor})).to.be.rejectedWith(evm.Throw)
+        await expect(sale.buyTokens(investor, {value: wei(1), from: investor})).to.be.rejectedWith(evm.Throw)
       })
     })
 
     describe(`when sale is paused`, () => {
       it(`should not be possible`, async () => {
-        const [owner, wallet] = accounts
+        const [owner, wallet, investor] = accounts
         const sale = await createPreSale({owner, wallet})
         const startTime = await sale.startTime.call()
         await evm.increaseTimeTo(startTime.toNumber())
-        await sale.pause()
-        await expect(sale.send(ether(1))).to.be.rejectedWith(evm.Throw)
-        await expect(sale.buyTokens(owner, {value: ether(1), from: owner})).to.be.rejectedWith(evm.Throw)
+        await expect(sale.whitelist(investor, ether(10), {from: owner}))
+        await expect(sale.sendTransaction({value: wei(1), from: investor})).to.be.fulfilled
+        await expect(sale.pause()).to.be.fulfilled
+        await expect(sale.sendTransaction({value: wei(1), from: investor})).to.be.rejectedWith(evm.Throw)
+        await expect(sale.buyTokens(investor, {value: wei(1), from: investor})).to.be.rejectedWith(evm.Throw)
+      })
+    })
+
+    describe(`when sale has finished`, () => {
+      it(`should not be possible`, async () => {
+        const [owner, wallet, investor] = accounts
+        const sale = await createPreSale({owner, wallet, goal: wei(2)})
+        const endTime = await sale.endTime.call()
+        await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+        await expect(sale.whitelist(investor, ether(10), {from: owner}))
+        await expect(sale.sendTransaction({value: wei(2), from: investor})).to.be.rejectedWith(evm.Throw)
+        await expect(sale.finish()).to.be.fulfilled
+        await expect(sale.sendTransaction({value: wei(1), from: investor})).to.be.rejectedWith(evm.Throw)
+        await expect(sale.buyTokens(investor, {value: wei(1), from: investor})).to.be.rejectedWith(evm.Throw)
       })
     })
 
     describe(`during sale`, () => {
+      describe(`validation`, () => {
+        it(`should not accept 0x0 as beneficiary`, async () => {
+          const [owner, wallet, investor] = accounts
+          const sale = await createPreSale({owner, wallet})
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await expect(sale.buyTokens(evm.ZERO, {value: wei(1), from: investor})).to.be.rejectedWith(evm.Throw)
+        })
+
+        it(`should require a non-zero value`, async () => {
+          const [owner, wallet, investor] = accounts
+          const sale = await createPreSale({owner, wallet})
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await sale.whitelist(investor, ether(10), {from: owner})
+          await expect(sale.buyTokens(investor, {value: wei(0), from: investor})).to.be.rejectedWith(evm.Throw)
+        })
+      })
+
       describe(`for a non-whitelisted beneficiary`, () => {
         it(`should not be possible`, async () => {
           const [owner, wallet, investor] = accounts
@@ -252,7 +333,6 @@ contract('PreSale', accounts => {
       })
 
       describe(`for a whitelisted beneficiary`, () => {
-
         it(`should increase total token supply`, async () => {
           const [owner, wallet, investor] = accounts
           const sale = await createPreSale({owner, wallet, rate: 1})

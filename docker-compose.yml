@@ -1,6 +1,6 @@
 version: "3"
 services:
-  testrpc:
+  testrpc-dev:
     build:
       context: ./vendor/testrpc
     ports:
