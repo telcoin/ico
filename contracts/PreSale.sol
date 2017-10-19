@@ -148,10 +148,9 @@ contract PreSale {
 
         uint256 weiAmount = deposited[_investor];
         deposited[_investor] = 0;
-        _investor.transfer(weiAmount);
-
         weiRefunded = weiRefunded.add(weiAmount);
 
+        _investor.transfer(weiAmount);
         Refunded(_investor, weiAmount);
     }
 
