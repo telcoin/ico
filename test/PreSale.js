@@ -17,6 +17,7 @@ contract('PreSale', accounts => {
     const defaults = {
       owner,
       wallet,
+      walletTestValue: wei(1),
       goal: ether(1000),
       rate: 1,
       // Note that startTime needs to definitely be after `now`. By the time
@@ -34,12 +35,20 @@ contract('PreSale', accounts => {
       args.endTime,
       args.rate,
       args.wallet,
-      {from: args.owner}
+      {value: args.walletTestValue, from: args.owner}
     )
   }
 
   before(async () => {
     return await evm.advanceBlock()
+  })
+
+  describe('creation', () => {
+    it(`should require a non-zero value to create`, async () => {
+      const [owner, wallet] = accounts
+      await expect(createPreSale({owner, wallet, walletTestValue: wei(0)})).to.be.rejectedWith(evm.Throw)
+      await expect(createPreSale({owner, wallet, walletTestValue: wei(1)})).to.be.fulfilled
+    })
   })
 
   describe('ownership', () => {

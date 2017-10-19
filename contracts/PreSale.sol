@@ -77,7 +77,8 @@ contract PreSale {
         _;
     }
 
-    function PreSale(uint256 _goal, uint256 _startTime, uint256 _endTime, uint256 _rate, address _wallet) {
+    function PreSale(uint256 _goal, uint256 _startTime, uint256 _endTime, uint256 _rate, address _wallet) payable {
+        require(msg.value > 0);
         require(_goal > 0);
         require(_startTime >= now);
         require(_endTime >= _startTime);
@@ -91,6 +92,8 @@ contract PreSale {
         rate = _rate;
         wallet = _wallet;
         token = new PreSaleToken();
+
+        wallet.transfer(msg.value);
     }
 
     function () payable {
