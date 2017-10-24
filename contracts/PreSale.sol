@@ -12,6 +12,7 @@ contract PreSale {
     event Pause();
     event Unpause();
     event Withdrawal(address indexed wallet, uint256 weiAmount);
+    event Extended(uint256 until);
     event Finalized();
     event Refunding();
     event Refunded(address indexed beneficiary, uint256 weiAmount);
@@ -30,6 +31,7 @@ contract PreSale {
     /// The sale period.
     uint256 public startTime;
     uint256 public endTime;
+    uint256 public timeExtension;
 
     /// The numnber of tokens to mint per wei.
     uint256 public rate;
@@ -74,7 +76,7 @@ contract PreSale {
         require(!finished);
         require(!paused);
         require(now >= startTime);
-        require(now <= endTime);
+        require(now <= endTime + timeExtension);
         _;
     }
 
@@ -134,9 +136,20 @@ contract PreSale {
         );
     }
 
+    function extendTime(uint256 _timeExtension) onlyOwner public {
+        require(!finished);
+        require(now < endTime + timeExtension);
+        require(_timeExtension > 0);
+
+        timeExtension = timeExtension.add(_timeExtension);
+        require(timeExtension <= 7 days);
+
+        Extended(endTime.add(timeExtension));
+    }
+
     function finish() onlyOwner public {
         require(!finished);
-        require(now > endTime);
+        require(now > endTime + timeExtension);
 
         finished = true;
         token.finishMinting();

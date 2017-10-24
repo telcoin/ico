@@ -500,6 +500,70 @@ contract('PreSale', accounts => {
     })
   })
 
+  describe(`extending`, () => {
+    describe(`by non-owner`, () => {
+      it(`should not be possible`, async () => {
+        const [owner, wallet, nonOwner] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.extendTime(duration.days(7), {from: nonOwner})).to.be.rejectedWith(evm.Throw)
+        await expect(sale.extendTime(duration.days(7), {from: owner})).to.be.fulfilled
+      })
+    })
+
+    describe(`by owner`, () => {
+      it(`should allow purchases until extension is over`, async () => {
+        const [owner, wallet, investor] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.extendTime(duration.days(7), {from: owner})).to.be.fulfilled
+        const endTime = await sale.endTime.call()
+        await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+        await expect(sale.whitelist(investor, ether(1), {from: owner})).to.be.fulfilled
+        await expect(sale.buyTokens(investor, {value: wei(49), from: investor})).to.be.fulfilled
+        await evm.increaseTimeTo(endTime.toNumber() + duration.days(8))
+        await expect(sale.sendTransaction({value: wei(16), from: investor})).to.be.rejectedWith(evm.Throw)
+        await expect(sale.buyTokens(investor, {value: wei(49), from: investor})).to.be.rejectedWith(evm.Throw)
+      })
+
+      it(`should not be possible beyond 7 days`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.extendTime(duration.days(7), {from: owner})).to.be.fulfilled
+        await expect(sale.extendTime(duration.days(1), {from: owner})).to.be.rejectedWith(evm.Throw)
+      })
+
+      it(`should not be possible after sale has ended`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        const endTime = await sale.endTime.call()
+        await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+        await expect(sale.extendTime(duration.days(1), {from: owner})).to.be.rejectedWith(evm.Throw)
+      })
+
+      it(`should not be possible after sale has finished`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        const endTime = await sale.endTime.call()
+        await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+        await expect(sale.finish({from: owner})).to.be.fulfilled
+        await expect(sale.extendTime(duration.days(1), {from: owner})).to.be.rejectedWith(evm.Throw)
+      })
+
+      it(`should not allow extending by 0`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        await expect(sale.extendTime(duration.seconds(0), {from: owner})).to.be.rejectedWith(evm.Throw)
+        await expect(sale.extendTime(duration.seconds(1), {from: owner})).to.be.fulfilled
+      })
+
+      it(`should fire Extended event`, async () => {
+        const [owner, wallet] = accounts
+        const sale = await createPreSale({owner, wallet})
+        const {logs} = await expect(sale.extendTime(duration.days(2), {from: owner})).to.be.fulfilled
+        expect(logs.find(e => e.event === 'Extended')).to.exist
+      })
+    })
+  })
+
   describe(`finishing`, () => {
     describe(`by non-owner`, () => {
       it(`should not be possible`, async () => {
