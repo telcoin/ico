@@ -333,6 +333,16 @@ contract('PreSale', accounts => {
       })
 
       describe(`for a whitelisted beneficiary`, () => {
+        it(`should not cost more than 110000 gas after initial purchase`, async () => {
+          const [owner, wallet, investor] = accounts
+          const sale = await createPreSale({owner, wallet, rate: 1})
+          const startTime = await sale.startTime.call()
+          await evm.increaseTimeTo(startTime.toNumber())
+          await sale.whitelist(investor, ether(10), {from: owner})
+          await expect(sale.sendTransaction({value: ether(1), from: investor})).be.fulfilled
+          await expect(sale.buyTokens.estimateGas(investor, {value: ether(1), from: investor})).to.eventually.be.bignumber.below(110000)
+        })
+
         it(`should increase total token supply`, async () => {
           const [owner, wallet, investor] = accounts
           const sale = await createPreSale({owner, wallet, rate: 1})
