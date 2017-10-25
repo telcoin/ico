@@ -446,7 +446,7 @@ contract('PreSale', accounts => {
 
     describe(`by owner`, () => {
       describe(`when goal has not been reached`, () => {
-        it(`should not be possible`, async () => {
+        it(`should not be possible, unless 14 days have been passed since contract finished (as a failsafe)`, async () => {
           const [owner, wallet, investor] = accounts
           const sale = await createPreSale({owner, wallet, goal: wei(333)})
           const startTime = await sale.startTime.call()
@@ -454,6 +454,15 @@ contract('PreSale', accounts => {
           await sale.whitelist(investor, ether(1), {from: owner})
           await expect(sale.sendTransaction({value: wei(332), from: investor})).to.be.fulfilled
           await expect(sale.withdraw({from: owner})).to.be.rejectedWith(evm.Throw)
+          const endTime = await sale.endTime.call()
+          await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+          await expect(sale.finish({from: owner})).to.be.fulfilled
+          const finishedAt = await sale.finishedAt.call()
+          await expect(sale.withdraw({from: owner})).to.be.rejectedWith(evm.Throw)
+          await evm.increaseTimeTo(finishedAt.toNumber() + duration.days(10))
+          await expect(sale.withdraw({from: owner})).to.be.rejectedWith(evm.Throw)
+          await evm.increaseTimeTo(finishedAt.toNumber() + duration.days(14) + duration.hours(1))
+          await expect(sale.withdraw({from: owner})).to.be.fulfilled
         })
       })
 
@@ -618,6 +627,20 @@ contract('PreSale', accounts => {
             await expect(sale.refunding.call()).to.eventually.equal(false)
             await expect(sale.finish({from: owner})).to.be.fulfilled
             await expect(sale.refunding.call()).to.eventually.equal(true)
+          })
+
+          it(`should set finishedAt`, async () => {
+            const [owner, wallet] = accounts
+            const sale = await createPreSale({owner, wallet, goal: wei(100)})
+            const startTime = await sale.startTime.call()
+            await evm.increaseTimeTo(startTime.toNumber())
+            const endTime = await sale.endTime.call()
+            await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+            await expect(sale.finishedAt.call()).to.eventually.bignumber.equal(0)
+            await expect(sale.finish({from: owner})).to.be.fulfilled
+            const now = await evm.latestTime()
+            await expect(sale.finishedAt.call()).to.eventually.bignumber.be.at.least(endTime)
+            await expect(sale.finishedAt.call()).to.eventually.bignumber.be.at.most(now)
           })
 
           it(`should fire Finalized event`, async () => {

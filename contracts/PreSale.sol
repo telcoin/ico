@@ -58,8 +58,9 @@ contract PreSale {
     /// Whether the sale is paused.
     bool public paused = false;
 
-    /// Whether the sale has finished.
+    /// Whether the sale has finished, and when.
     bool public finished = false;
+    uint256 public finishedAt;
 
     /// Whether we're accepting refunds.
     bool public refunding = false;
@@ -152,6 +153,7 @@ contract PreSale {
         require(now > endTime + timeExtension);
 
         finished = true;
+        finishedAt = now;
         token.finishMinting();
 
         if (goalReached()) {
@@ -210,7 +212,7 @@ contract PreSale {
     }
 
     function withdraw() onlyOwner public {
-        require(goalReached());
+        require(goalReached() || (finished && now > finishedAt + 14 days));
 
         uint256 weiAmount = this.balance;
 
