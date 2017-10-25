@@ -115,15 +115,15 @@ contract('PreSaleToken', accounts => {
       await expect(token.totalSupply.call()).to.eventually.bignumber.equal(15)
     })
 
-    it(`should add recipient to the list of recipients`, async () => {
-      const [owner, recipient1, recipient2] = accounts
+    it(`should add new token holder to the list of token holders`, async () => {
+      const [owner, holder1, holder2] = accounts
       const token = await PreSaleToken.new({from: owner})
-      await expect(token.recipients.call(0)).to.be.rejectedWith(evm.Throw)
-      await expect(token.recipients.call(1)).to.be.rejectedWith(evm.Throw)
-      await token.mint(recipient1, 10, {from: owner})
-      await token.mint(recipient2, 10, {from: owner})
-      await expect(token.recipients.call(0)).to.eventually.equal(recipient1)
-      await expect(token.recipients.call(1)).to.eventually.equal(recipient2)
+      await expect(token.holders.call(0)).to.be.rejectedWith(evm.Throw)
+      await expect(token.holders.call(1)).to.be.rejectedWith(evm.Throw)
+      await token.mint(holder1, 10, {from: owner})
+      await token.mint(holder2, 10, {from: owner})
+      await expect(token.holders.call(0)).to.eventually.equal(holder1)
+      await expect(token.holders.call(1)).to.eventually.equal(holder2)
     })
 
     it(`should not be allowed after minting finishes`, async () => {
