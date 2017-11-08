@@ -111,6 +111,53 @@ contract('PreSale', accounts => {
     })
   })
 
+  describe('wallet', () => {
+    it(`should not be changeable by non-owner`, async () => {
+      const [owner, nonOwner, wallet, otherWallet] = accounts
+      const sale = await createPreSale({owner, wallet})
+      await expect(sale.changeWallet(otherWallet, {value: wei(1), from: nonOwner})).to.be.rejectedWith(evm.Throw)
+      await expect(sale.changeWallet(otherWallet, {value: wei(1), from: owner})).to.be.fulfilled
+    })
+
+    it(`should be changeable by owner`, async () => {
+      const [owner, wallet, otherWallet] = accounts
+      const sale = await createPreSale({owner, wallet})
+      await expect(sale.wallet.call()).to.eventually.equal(wallet)
+      await expect(sale.changeWallet(otherWallet, {value: wei(1), from: owner})).to.be.fulfilled
+      await expect(sale.wallet.call()).to.eventually.equal(otherWallet)
+    })
+
+    it(`should not allow 0x0 as wallet`, async () => {
+      const [owner, wallet, otherWallet] = accounts
+      const sale = await createPreSale({owner, wallet})
+      await expect(sale.changeWallet(evm.ZERO, {value: wei(1), from: owner})).to.be.rejectedWith(evm.Throw)
+      await expect(sale.changeWallet(otherWallet, {value: wei(1), from: owner})).to.be.fulfilled
+    })
+
+    it(`should require value to be sent when changing wallet`, async () => {
+      const [owner, wallet, otherWallet] = accounts
+      const sale = await createPreSale({owner, wallet})
+      await expect(sale.changeWallet(otherWallet, {value: wei(0), from: owner})).to.be.rejectedWith(evm.Throw)
+      await expect(sale.changeWallet(otherWallet, {value: wei(1), from: owner})).to.be.fulfilled
+    })
+
+    it(`should transfer sent value to the new wallet`, async () => {
+      const [owner, wallet, otherWallet] = accounts
+      const sale = await createPreSale({owner, wallet})
+      const walletBalanceBefore = await evm.getBalance(otherWallet)
+      await expect(sale.changeWallet(otherWallet, {value: wei(123), from: owner})).to.be.fulfilled
+      const walletBalanceAfter = await evm.getBalance(otherWallet)
+      expect(walletBalanceAfter.minus(walletBalanceBefore)).to.bignumber.equal(wei(123))
+    })
+
+    it(`should fire WalletChanged event on wallet change`, async () => {
+      const [owner, wallet, otherWallet] = accounts
+      const sale = await createPreSale({owner, wallet})
+      const {logs} = await expect(sale.changeWallet(otherWallet, {value: wei(1), from: owner})).to.be.fulfilled
+      expect(logs.find(e => e.event === 'WalletChanged')).to.exist
+    })
+  })
+
   describe('token', () => {
     it(`should be owned by the sale contract`, async () => {
       const [owner, wallet] = accounts
@@ -333,16 +380,6 @@ contract('PreSale', accounts => {
       })
 
       describe(`for a whitelisted beneficiary`, () => {
-        it(`should not cost more than 110000 gas after initial purchase`, async () => {
-          const [owner, wallet, investor] = accounts
-          const sale = await createPreSale({owner, wallet, rate: 1})
-          const startTime = await sale.startTime.call()
-          await evm.increaseTimeTo(startTime.toNumber())
-          await sale.whitelist(investor, ether(10), {from: owner})
-          await expect(sale.sendTransaction({value: ether(1), from: investor})).be.fulfilled
-          await expect(sale.buyTokens.estimateGas(investor, {value: ether(1), from: investor})).to.eventually.be.bignumber.below(110000)
-        })
-
         it(`should increase total token supply`, async () => {
           const [owner, wallet, investor] = accounts
           const sale = await createPreSale({owner, wallet, rate: 1})

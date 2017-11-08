@@ -8,6 +8,7 @@ contract PreSale {
     using SafeMath for uint256;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event WalletChanged(address indexed previousWallet, address indexed newWallet);
     event TokenPurchase(address indexed purchaser, address indexed beneficiary, uint256 value, uint256 amount);
     event Pause();
     event Unpause();
@@ -135,6 +136,16 @@ contract PreSale {
             weiAmount,
             tokens
         );
+    }
+
+    function changeWallet(address _wallet) onlyOwner public payable {
+        require(_wallet != 0x0);
+        require(msg.value > 0);
+
+        wallet = _wallet;
+        WalletChanged(_wallet, wallet);
+
+        wallet.transfer(msg.value);
     }
 
     function extendTime(uint256 _timeExtension) onlyOwner public {
