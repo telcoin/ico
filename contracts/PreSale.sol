@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity 0.4.18;
 
 import './lib/SafeMath.sol';
 import './PreSaleToken.sol';
@@ -89,6 +89,7 @@ contract PreSale {
         uint256 _rate,
         address _wallet
     )
+        public
         payable
     {
         require(msg.value > 0);
@@ -109,7 +110,7 @@ contract PreSale {
         wallet.transfer(msg.value);
     }
 
-    function () payable {
+    function () public payable {
         buyTokens(msg.sender);
     }
 
@@ -192,15 +193,9 @@ contract PreSale {
         uint256 weiAmount = deposited[_investor];
         deposited[_investor] = 0;
         weiRefunded = weiRefunded.add(weiAmount);
-
-        // Work around a Solium linter bug by creating a variable that does
-        // not begin with an underscore. See [1] for more information.
-        //
-        // [1] https://github.com/duaraghav8/Solium/issues/116
-        address recipient = _investor;
-        recipient.transfer(weiAmount);
-
         Refunded(_investor, weiAmount);
+
+        _investor.transfer(weiAmount);
     }
 
     function transferOwnership(address _to) onlyOwner public {

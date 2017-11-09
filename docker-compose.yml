@@ -3,5 +3,6 @@ services:
   testrpc-dev:
     build:
       context: ./vendor/testrpc
+    command: --gasLimit 6721975 --gasPrice 100000000000
     ports:
       - 8545:8545

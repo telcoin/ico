@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity 0.4.18;
 
 import './lib/SafeMath.sol';
 
@@ -44,7 +44,7 @@ contract PreSaleToken {
         _;
     }
 
-    function PreSaleToken() {
+    function PreSaleToken() public {
         owner = msg.sender;
     }
 
