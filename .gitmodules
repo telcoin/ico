@@ -1,3 +1,6 @@
 [submodule "vendor/testrpc"]
 	path = vendor/testrpc
 	url = https://github.com/ethereumjs/testrpc.git
+[submodule "vendor/GnosisMultiSigWallet"]
+	path = vendor/GnosisMultiSigWallet
+	url = https://github.com/gnosis/MultiSigWallet
