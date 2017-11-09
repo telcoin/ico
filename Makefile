@@ -1,4 +1,4 @@
-.PHONY: default build lint test coverage wallet
+.PHONY: default build lint test coverage bundle
 
 GNOSIS := vendor/GnosisMultiSigWallet
 
@@ -16,6 +16,16 @@ test: lint
 coverage: lint
 	./node_modules/.bin/solidity-coverage
 
-wallet: $(GNOSIS)/contracts/MultiSigWallet.sol $(GNOSIS)/contracts/MultiSigWalletWithDailyLimit.sol
-	(cat $(GNOSIS)/contracts/MultiSigWallet.sol && \
-		sed '/^$$/,$$!d' $(GNOSIS)/contracts/MultiSigWalletWithDailyLimit.sol) > contracts/Wallet.sol
+bundle:
+	mkdir -p bundle/contracts
+	rm -f bundle/contracts/Wallet.sol
+	cat $(GNOSIS)/contracts/MultiSigWallet.sol >> bundle/contracts/Wallet.sol
+	sed '/^$$/,$$!d' $(GNOSIS)/contracts/MultiSigWalletWithDailyLimit.sol >> bundle/contracts/Wallet.sol
+	rm -f bundle/contracts/PreSale.sol
+	cat contracts/lib/SafeMath.sol >> bundle/contracts/PreSale.sol
+	echo >> bundle/contracts/PreSale.sol
+	echo >> bundle/contracts/PreSale.sol
+	sed '/contract/,$$!d' contracts/PreSaleToken.sol >> bundle/contracts/PreSale.sol
+	echo >> bundle/contracts/PreSale.sol
+	echo >> bundle/contracts/PreSale.sol
+	sed '/contract/,$$!d' contracts/PreSale.sol >> bundle/contracts/PreSale.sol
