@@ -143,8 +143,8 @@ contract PreSale {
         require(_wallet != 0x0);
         require(msg.value > 0);
 
+        WalletChanged(wallet, _wallet);
         wallet = _wallet;
-        WalletChanged(_wallet, wallet);
 
         wallet.transfer(msg.value);
     }
