@@ -1,7 +1,7 @@
 pragma solidity 0.4.18;
 
-import './lib/SafeMath.sol';
-import './PreSaleToken.sol';
+import "./lib/SafeMath.sol";
+import "./PreSaleToken.sol";
 
 
 contract PreSale {
@@ -17,7 +17,7 @@ contract PreSale {
     event Finalized();
     event Refunding();
     event Refunded(address indexed beneficiary, uint256 weiAmount);
-    event Whitelisted(address indexed participant, uint256 weiAmount);
+    event Whitelisted(address indexed participant, uint256 weiAmount, uint32 bonusRate);
 
     /// The owner of the contract.
     address public owner;
@@ -47,8 +47,9 @@ contract PreSale {
     address public wallet;
 
     /// The list of addresses that are allowed to participate in the sale,
-    /// and up to what amount.
+    /// up to what amount, and any special rate they may have.
     mapping(address => uint256) public whitelisted;
+    mapping(address => uint32) public bonusRates;
 
     /// The amount of wei invested by each investor.
     mapping(address => uint256) public deposited;
@@ -123,7 +124,8 @@ contract PreSale {
 
         require(newDeposited <= whitelisted[_beneficiary]);
 
-        uint256 tokens = weiAmount.mul(rate);
+        uint32 bonusRate = bonusRates[_beneficiary];
+        uint256 tokens = weiAmount.mul(rate).mul(1000 + bonusRate).div(1000);
 
         deposited[_beneficiary] = newDeposited;
         investors.push(_beneficiary);
@@ -210,11 +212,20 @@ contract PreSale {
         Unpause();
     }
 
-    function whitelist(address _participant, uint256 _weiAmount) onlyOwner public {
+    function whitelist(
+        address _participant,
+        uint256 _weiAmount,
+        uint32 _bonusRate
+    )
+        onlyOwner
+        public
+    {
         require(_participant != 0x0);
+        require(_bonusRate <= 1000);
 
         whitelisted[_participant] = _weiAmount;
-        Whitelisted(_participant, _weiAmount);
+        bonusRates[_participant] = _bonusRate;
+        Whitelisted(_participant, _weiAmount, _bonusRate);
     }
 
     function withdraw() onlyOwner public {

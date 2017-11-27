@@ -913,6 +913,12 @@ fstream@^1.0.0, fstream@^1.0.10, fstream@^1.0.2:
     mkdirp ">=0.5 0"
     rimraf "2"
 
+ganache-cli@^6.0.3:
+  version "6.0.3"
+  resolved "https://registry.yarnpkg.com/ganache-cli/-/ganache-cli-6.0.3.tgz#8b9da149707daa29c69da26f0582b89c90113b9c"
+  dependencies:
+    webpack "^3.0.0"
+
 gauge@~2.7.3:
   version "2.7.4"
   resolved "https://registry.yarnpkg.com/gauge/-/gauge-2.7.4.tgz#2c03405c7538c39d7eb37b317022e325fb018bf7"
@@ -2257,9 +2263,9 @@ solc@0.4.18:
     semver "^5.3.0"
     yargs "^4.7.1"
 
-solidity-coverage@^0.4.0:
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/solidity-coverage/-/solidity-coverage-0.4.0.tgz#9ae9873a1a01038c0b1b8735f1b502c94e7fda57"
+solidity-coverage@^0.4.2:
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/solidity-coverage/-/solidity-coverage-0.4.2.tgz#67609353bb68a82b758427d17c7ae8fb6001b560"
   dependencies:
     death "^1.1.0"
     ethereumjs-testrpc-sc "6.0.7"
@@ -2283,9 +2289,9 @@ solium-plugin-security@0.0.2:
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/solium-plugin-security/-/solium-plugin-security-0.0.2.tgz#2e1d690c2d260713b61bbc4194efea2306abd940"
 
-solium@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/solium/-/solium-1.0.4.tgz#3df640dca996bca40f6bb3232ecf22aca2fc1163"
+solium@^1.0.7:
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/solium/-/solium-1.0.7.tgz#5279b1fb1dd7974c035910d5feb570f72ed8ac43"
   dependencies:
     ajv "^5.2.2"
     chokidar "^1.6.0"
@@ -2296,11 +2302,12 @@ solium@^1.0.4:
     sol-digger "0.0.2"
     sol-explore "^1.6.1"
     solium-plugin-security "0.0.2"
-    solparse "1.4.0"
+    solparse "1.4.1"
+    text-table "^0.2.0"
 
-solparse@1.4.0:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/solparse/-/solparse-1.4.0.tgz#095695628d394132271c4808afab206bb20f6629"
+solparse@1.4.1:
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/solparse/-/solparse-1.4.1.tgz#ebea5636019269ceea5401e686bfacd1c07152cc"
   dependencies:
     mocha "^4.0.1"
     pegjs "^0.10.0"
@@ -2486,6 +2493,10 @@ tar@^2.2.1:
     block-stream "*"
     fstream "^1.0.2"
     inherits "2"
+
+text-table@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
 
 timers-browserify@^2.0.2:
   version "2.0.4"

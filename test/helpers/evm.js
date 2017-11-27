@@ -6,6 +6,8 @@ const promisor = require('./promisor')
 
 module.exports.Throw = 'invalid opcode'
 
+module.exports.Revert = 'revert'
+
 module.exports.BigNumber = web3.BigNumber
 
 module.exports.ZERO = '0x0000000000000000000000000000000000000000'

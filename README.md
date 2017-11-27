@@ -4,7 +4,6 @@
 
 ### Build requirements
 
-* Docker
 * Yarn
 * Node.js 8.6.0 or newer
 
@@ -16,10 +15,10 @@ First, make sure you've installed development dependencies by running:
 yarn
 ```
 
-Next, start [`testrpc`](https://github.com/ethereumjs/testrpc):
+Next, start [`ganache-cli`](https://github.com/trufflesuite/ganache-cli):
 
 ```bash
-docker-compose up
+make ganache
 ```
 
 Finally, to run tests, simply execute:

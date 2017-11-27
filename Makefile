@@ -5,16 +5,19 @@ GNOSIS := vendor/GnosisMultiSigWallet
 default: build
 
 build:
-	./node_modules/.bin/truffle compile
+	npm run truffle -- compile
 
 lint:
-	./node_modules/.bin/solium -d contracts
+	npm run solium -- -d contracts
 
 test: lint
-	./node_modules/.bin/truffle test
+	npm run truffle -- test
 
 coverage: lint
-	./node_modules/.bin/solidity-coverage
+	npm run solidity-coverage
+
+ganache:
+	npm run ganache-cli
 
 bundle:
 	mkdir -p bundle/contracts

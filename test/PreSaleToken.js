@@ -10,7 +10,7 @@ contract('PreSaleToken', accounts => {
     it(`should not be transferrable by non-owner`, async () => {
       const [owner, nonOwner] = accounts
       const token = await PreSaleToken.new({from: owner})
-      await expect(token.transferOwnership(nonOwner, { from: nonOwner })).to.be.rejectedWith(evm.Throw)
+      await expect(token.transferOwnership(nonOwner, { from: nonOwner })).to.be.rejectedWith(evm.Revert)
     })
 
     it(`should be transferrable by owner`, async () => {
@@ -23,7 +23,7 @@ contract('PreSaleToken', accounts => {
     it(`should not allow 0x0 as owner`, async () => {
       const [owner] = accounts
       const token = await PreSaleToken.new({from: owner})
-      await expect(token.transferOwnership('0x0000000000000000000000000000000000000000', {from: owner})).to.be.rejectedWith(evm.Throw)
+      await expect(token.transferOwnership('0x0000000000000000000000000000000000000000', {from: owner})).to.be.rejectedWith(evm.Revert)
     })
 
     it(`should fire OwnershipTransferred event on ownership change`, async () => {
@@ -40,7 +40,7 @@ contract('PreSaleToken', accounts => {
         it(`should not be possible`, async () => {
           const [owner, nonOwner] = accounts
           const token = await PreSaleToken.new({from: owner})
-          await expect(token.finishMinting({from: nonOwner})).to.be.rejectedWith(evm.Throw)
+          await expect(token.finishMinting({from: nonOwner})).to.be.rejectedWith(evm.Revert)
         })
       })
 
@@ -57,7 +57,7 @@ contract('PreSaleToken', accounts => {
           const [owner] = accounts
           const token = await PreSaleToken.new({from: owner})
           await expect(token.finishMinting({from: owner})).to.be.fulfilled
-          await expect(token.finishMinting({from: owner})).to.be.rejectedWith(evm.Throw)
+          await expect(token.finishMinting({from: owner})).to.be.rejectedWith(evm.Revert)
         })
 
         it(`should fire MintFinished event`, async () => {
@@ -72,7 +72,7 @@ contract('PreSaleToken', accounts => {
     it(`should not be allowed by non-owner`, async () => {
       const [owner, nonOwner] = accounts
       const token = await PreSaleToken.new({from: owner})
-      await expect(token.mint(nonOwner, 10000, { from: nonOwner })).to.be.rejectedWith(evm.Throw)
+      await expect(token.mint(nonOwner, 10000, { from: nonOwner })).to.be.rejectedWith(evm.Revert)
     })
 
     it(`should be allowed by owner`, async () => {
@@ -102,7 +102,7 @@ contract('PreSaleToken', accounts => {
     it(`should not allow 0 tokens to be minted`, async () => {
       const [owner] = accounts
       const token = await PreSaleToken.new({from: owner})
-      await expect(token.mint(owner, 0, {from: owner})).to.be.rejectedWith(evm.Throw)
+      await expect(token.mint(owner, 0, {from: owner})).to.be.rejectedWith(evm.Revert)
     })
 
     it(`should increase total supply`, async () => {
@@ -130,13 +130,13 @@ contract('PreSaleToken', accounts => {
       const [owner] = accounts
       const token = await PreSaleToken.new({from: owner})
       await token.finishMinting({from: owner})
-      await expect(token.mint(owner, 10000, {from: owner})).to.be.rejectedWith(evm.Throw)
+      await expect(token.mint(owner, 10000, {from: owner})).to.be.rejectedWith(evm.Revert)
     })
 
     it(`should not let mint for 0x0`, async () => {
       const [owner] = accounts
       const token = await PreSaleToken.new({from: owner})
-      await expect(token.mint(0x0, 10000, {from: owner})).to.be.rejectedWith(evm.Throw)
+      await expect(token.mint(0x0, 10000, {from: owner})).to.be.rejectedWith(evm.Revert)
     })
   })
 
@@ -148,7 +148,7 @@ contract('PreSaleToken', accounts => {
           const token = await PreSaleToken.new({from: owner})
           await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
           await expect(token.finishMinting({from: owner})).to.be.fulfilled
-          await expect(token.allowExchanger(exchanger, {from: nonOwner})).to.be.rejectedWith(evm.Throw)
+          await expect(token.allowExchanger(exchanger, {from: nonOwner})).to.be.rejectedWith(evm.Revert)
         })
 
         it(`should not let revoke exchangers`, async () => {
@@ -157,7 +157,7 @@ contract('PreSaleToken', accounts => {
           await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
           await expect(token.finishMinting({from: owner})).to.be.fulfilled
           await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
-          await expect(token.revokeExchanger(exchanger, {from: nonOwner})).to.be.rejectedWith(evm.Throw)
+          await expect(token.revokeExchanger(exchanger, {from: nonOwner})).to.be.rejectedWith(evm.Revert)
         })
       })
 
@@ -167,7 +167,7 @@ contract('PreSaleToken', accounts => {
             const [owner, recipient, exchanger] = accounts
             const token = await PreSaleToken.new({from: owner})
             await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
-            await expect(token.allowExchanger(exchanger, {from: owner})).to.be.rejectedWith(evm.Throw)
+            await expect(token.allowExchanger(exchanger, {from: owner})).to.be.rejectedWith(evm.Revert)
             await expect(token.finishMinting({from: owner})).to.be.fulfilled
             await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
           })
@@ -176,7 +176,7 @@ contract('PreSaleToken', accounts => {
             const [owner, recipient, exchanger] = accounts
             const token = await PreSaleToken.new({from: owner})
             await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
-            await expect(token.revokeExchanger(exchanger, {from: owner})).to.be.rejectedWith(evm.Throw)
+            await expect(token.revokeExchanger(exchanger, {from: owner})).to.be.rejectedWith(evm.Revert)
             await expect(token.finishMinting({from: owner})).to.be.fulfilled
             await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
             await expect(token.revokeExchanger(exchanger, {from: owner})).to.be.fulfilled
@@ -209,7 +209,7 @@ contract('PreSaleToken', accounts => {
             await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
             await expect(token.finishMinting({from: owner})).to.be.fulfilled
             await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
-            await expect(token.allowExchanger(exchanger, {from: owner})).to.be.rejectedWith(evm.Throw)
+            await expect(token.allowExchanger(exchanger, {from: owner})).to.be.rejectedWith(evm.Revert)
           })
 
           it(`should not let 0x0 to be added as an exchanger`, async () => {
@@ -217,7 +217,7 @@ contract('PreSaleToken', accounts => {
             const token = await PreSaleToken.new({from: owner})
             await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
             await expect(token.finishMinting({from: owner})).to.be.fulfilled
-            await expect(token.allowExchanger(evm.ZERO, {from: owner})).to.be.rejectedWith(evm.Throw)
+            await expect(token.allowExchanger(evm.ZERO, {from: owner})).to.be.rejectedWith(evm.Revert)
           })
 
           it(`should not let revoke 0x0 exchanger`, async () => {
@@ -225,7 +225,7 @@ contract('PreSaleToken', accounts => {
             const token = await PreSaleToken.new({from: owner})
             await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
             await expect(token.finishMinting({from: owner})).to.be.fulfilled
-            await expect(token.revokeExchanger(evm.ZERO, {from: owner})).to.be.rejectedWith(evm.Throw)
+            await expect(token.revokeExchanger(evm.ZERO, {from: owner})).to.be.rejectedWith(evm.Revert)
           })
 
           it(`should let revoke exchangers`, async () => {
@@ -254,7 +254,7 @@ contract('PreSaleToken', accounts => {
             await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
             await expect(token.finishMinting({from: owner})).to.be.fulfilled
             await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
-            await expect(token.revokeExchanger(other, {from: owner})).to.be.rejectedWith(evm.Throw)
+            await expect(token.revokeExchanger(other, {from: owner})).to.be.rejectedWith(evm.Revert)
           })
         })
       })
@@ -267,7 +267,7 @@ contract('PreSaleToken', accounts => {
         await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
         await expect(token.finishMinting({from: owner})).to.be.fulfilled
         await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
-        await expect(token.exchange(recipient, 33, 'FOO', 75, {from: nonOwner})).to.be.rejectedWith(evm.Throw)
+        await expect(token.exchange(recipient, 33, 'FOO', 75, {from: nonOwner})).to.be.rejectedWith(evm.Revert)
       })
     })
 
@@ -277,8 +277,8 @@ contract('PreSaleToken', accounts => {
           const [owner, recipient, exchanger] = accounts
           const token = await PreSaleToken.new({from: owner})
           await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
-          await expect(token.allowExchanger(exchanger, {from: owner})).to.be.rejectedWith(evm.Throw)
-          await expect(token.exchange(recipient, 33, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Throw)
+          await expect(token.allowExchanger(exchanger, {from: owner})).to.be.rejectedWith(evm.Revert)
+          await expect(token.exchange(recipient, 33, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Revert)
         })
       })
 
@@ -323,7 +323,7 @@ contract('PreSaleToken', accounts => {
           await expect(token.finishMinting({from: owner})).to.be.fulfilled
           await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
           await expect(token.allowExchanger(otherExchanger, {from: owner})).to.be.fulfilled
-          await expect(token.exchange(otherExchanger, 33, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Throw)
+          await expect(token.exchange(otherExchanger, 33, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Revert)
         })
 
         it(`should not let exchange for 0x0`, async () => {
@@ -332,7 +332,7 @@ contract('PreSaleToken', accounts => {
           await expect(token.finishMinting({from: owner})).to.be.fulfilled
           await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
           await expect(token.allowExchanger(otherExchanger, {from: owner})).to.be.fulfilled
-          await expect(token.exchange(evm.ZERO, 33, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Throw)
+          await expect(token.exchange(evm.ZERO, 33, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Revert)
         })
 
         it(`should not allow 0 amount to be exchanged`, async () => {
@@ -341,7 +341,7 @@ contract('PreSaleToken', accounts => {
           await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
           await expect(token.finishMinting({from: owner})).to.be.fulfilled
           await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
-          await expect(token.exchange(recipient, 0, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Throw)
+          await expect(token.exchange(recipient, 0, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Revert)
         })
 
         it(`should not allow more than available balance to be exchanged`, async () => {
@@ -350,7 +350,7 @@ contract('PreSaleToken', accounts => {
           await expect(token.mint(recipient, 100, {from: owner})).to.be.fulfilled
           await expect(token.finishMinting({from: owner})).to.be.fulfilled
           await expect(token.allowExchanger(exchanger, {from: owner})).to.be.fulfilled
-          await expect(token.exchange(recipient, 101, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Throw)
+          await expect(token.exchange(recipient, 101, 'FOO', 75, {from: exchanger})).to.be.rejectedWith(evm.Revert)
         })
 
         it(`should not change total supply`, async () => {
