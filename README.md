@@ -27,11 +27,27 @@ Finally, to run tests, simply execute:
 make test
 ```
 
+### Deployment
+
+To deploy the Presale:
+
+1. Run `make bundle` to create `./bundle/contracts/PreSale.sol`.
+2. In Parity's contract deployment view, load that file. Note that we're specifically avoiding `truffle deploy` to distance us from black magic as much as possible.
+3. Deploy and provide the following arguments:
+
+| Argument   | Value                                      | Meaning                                   |
+|------------|--------------------------------------------|-------------------------------------------|
+| _goal      | 1 ether                                    | Contract successful if 1 ether received.  |
+| _startTime | 1511899200                                 | 2017-11-28T20:00:00.000Z                  |
+| _endTime   | 1512691200                                 | 2017-12-08T00:00:00.000Z                  |
+| _rate      | 1                                          | For every wei, give 1 PreSale token.      |
+| _wallet    | 0x8322C7E7C14B57Ff85947F28381421692A1cF267 | Our multisig wallet.                      |
+
 ### Expected flow
 
 1. A `PreSale` contract is deployed with the agreed upon `goal`, `startTime`, `endTime`, `rate` and `wallet` arguments. These values cannot be changed later. A non-zero value must be sent to the contract, which will then be sent to the wallet as a way to verify that the wallet is capable of actually receiving funds.
 2. It is not possible to participate in the sale until the sale starts.
-3. Before or after the sale starts, the contract owner must call `.whitelist(address)` to whitelist investors one by one.
+3. Before or after the sale starts, the contract owner must call `.whitelist(address, uint256, uint32)` to whitelist investors one by one.
 4. Once the sale starts, whitelisted participants are able to either send ether, or anyone can call `.buyTokens(address)` for a whitelisted address to purchase pre-sale tokens.
 5. Sent Ether is locked in the `PreSale` until `.goalReached()`, at which point due to it already being obvious that the sale will succeed and therefore no refunds will be issued, the contract owner will be able to `.withdraw()` the balance accumulated so far in order to reduce the risk of either the contract getting hacked or the full amount of funds getting permanently locked in the contract due to an error interacting with the wallet.
 6. Once the `PreSale`'s `endTime` passes, the contract owner calls `.finish()` on the contract. This finishes the minting of `PreSaleToken`, and depending on whether `goalReached()` or not, may either cause a final withdrawal, or allow refunds to be processed by setting the `refunding` flag.
