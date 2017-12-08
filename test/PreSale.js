@@ -324,15 +324,25 @@ contract('PreSale', accounts => {
 
     describe(`after sale ends`, () => {
       it(`should not be possible`, async () => {
+          console.log("a")
         const [owner, wallet, investor] = accounts
+          console.log("b")
         const sale = await createPreSale({owner, wallet})
+          console.log("c")
         const startTime = await sale.startTime.call()
+          console.log("d")
         await evm.increaseTimeTo(startTime.toNumber())
-        await expect(sale.whitelist(investor, ether(10), 0, {from: owner}))
+          console.log("e")
+        await expect(sale.whitelist(investor, ether(10), 0, {from: owner})).to.be.fulfilled
+          console.log("f")
         await expect(sale.sendTransaction({value: wei(1), from: investor})).to.be.fulfilled
+          console.log("g")
         const endTime = await sale.endTime.call()
+          console.log("h")
         await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
+          console.log("i")
         await expect(sale.sendTransaction({value: wei(1), from: investor})).to.be.rejectedWith(evm.Revert)
+          console.log("j")
         await expect(sale.buyTokens(investor, {value: wei(1), from: investor})).to.be.rejectedWith(evm.Revert)
       })
     })
