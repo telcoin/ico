@@ -4,3 +4,4 @@
 /coverageEnv/
 /node_modules/
 /temp/
+*.swp
