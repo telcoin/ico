@@ -314,7 +314,7 @@ contract('PreSale', accounts => {
         const [owner, wallet, investor] = accounts
         const sale = await createPreSale({owner, wallet})
         const startTime = await sale.startTime.call()
-        await expect(sale.whitelist(investor, ether(10), 0, {from: owner}))
+        await expect(sale.whitelist(investor, ether(10), 0, {from: owner})).to.be.fulfilled
         await expect(sale.sendTransaction({value: ether(1), from: investor})).to.be.rejectedWith(evm.Revert)
         await expect(sale.buyTokens(investor, {value: ether(1), from: investor})).to.be.rejectedWith(evm.Revert)
         await evm.increaseTimeTo(startTime.toNumber())
@@ -328,7 +328,7 @@ contract('PreSale', accounts => {
         const sale = await createPreSale({owner, wallet})
         const startTime = await sale.startTime.call()
         await evm.increaseTimeTo(startTime.toNumber())
-        await expect(sale.whitelist(investor, ether(10), 0, {from: owner}))
+        await expect(sale.whitelist(investor, ether(10), 0, {from: owner})).to.be.fulfilled
         await expect(sale.sendTransaction({value: wei(1), from: investor})).to.be.fulfilled
         const endTime = await sale.endTime.call()
         await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
@@ -343,7 +343,7 @@ contract('PreSale', accounts => {
         const sale = await createPreSale({owner, wallet})
         const startTime = await sale.startTime.call()
         await evm.increaseTimeTo(startTime.toNumber())
-        await expect(sale.whitelist(investor, ether(10), 0, {from: owner}))
+        await expect(sale.whitelist(investor, ether(10), 0, {from: owner})).to.be.fulfilled
         await expect(sale.sendTransaction({value: wei(1), from: investor})).to.be.fulfilled
         await expect(sale.pause()).to.be.fulfilled
         await expect(sale.sendTransaction({value: wei(1), from: investor})).to.be.rejectedWith(evm.Revert)
@@ -357,7 +357,7 @@ contract('PreSale', accounts => {
         const sale = await createPreSale({owner, wallet, goal: wei(2)})
         const endTime = await sale.endTime.call()
         await evm.increaseTimeTo(endTime.toNumber() + duration.hours(1))
-        await expect(sale.whitelist(investor, ether(10), 0, {from: owner}))
+        await expect(sale.whitelist(investor, ether(10), 0, {from: owner})).to.be.fulfilled
         await expect(sale.sendTransaction({value: wei(2), from: investor})).to.be.rejectedWith(evm.Revert)
         await expect(sale.finish()).to.be.fulfilled
         await expect(sale.sendTransaction({value: wei(1), from: investor})).to.be.rejectedWith(evm.Revert)
