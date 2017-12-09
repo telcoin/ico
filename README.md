@@ -45,7 +45,7 @@ To deploy the Presale:
 
 ### Expected flow
 
-1. A `PreSale` contract is deployed with the agreed upon `goal`, `startTime`, `endTime`, `rate` and `wallet` arguments. These values cannot be changed later. A non-zero value must be sent to the contract, which will then be sent to the wallet as a way to verify that the wallet is capable of actually receiving funds.
+1. A `PreSale` contract is deployed with the agreed upon `goal`, `startTime`, `endTime`, `rate` and `wallet` arguments. These values were originally meant to be immutable, but following the Parity wallet suicide it was deemed necessary to have a method to change the wallet if needed. The `endTime` can also be extended by up to a maximum of 7 days as described below. A non-zero value must be sent to the contract, which will then be sent to the wallet as a way to verify that the wallet is capable of actually receiving funds.
 2. It is not possible to participate in the sale until the sale starts.
 3. Before or after the sale starts, the contract owner must call `.whitelist(address, uint256, uint32)` to whitelist investors one by one.
 4. Once the sale starts, whitelisted participants are able to either send ether, or anyone can call `.buyTokens(address)` for a whitelisted address to purchase pre-sale tokens.
