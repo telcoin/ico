@@ -32,3 +32,20 @@ bundle:
 	echo >> bundle/contracts/PreSale.sol
 	echo >> bundle/contracts/PreSale.sol
 	sed '/contract/,$$!d' contracts/PreSale.sol >> bundle/contracts/PreSale.sol
+	rm -f bundle/contracts/TelcoinSale.sol
+	cat contracts/lib/SafeMath.sol >> bundle/contracts/TelcoinSale.sol
+	echo >> bundle/contracts/TelcoinSale.sol
+	echo >> bundle/contracts/TelcoinSale.sol
+	sed '/contract/,$$!d' contracts/Telcoin.sol >> bundle/contracts/TelcoinSale.sol
+	echo >> bundle/contracts/TelcoinSale.sol
+	echo >> bundle/contracts/TelcoinSale.sol
+	sed '/contract/,$$!d' contracts/TelcoinSaleToken.sol >> bundle/contracts/TelcoinSale.sol
+	echo >> bundle/contracts/TelcoinSale.sol
+	echo >> bundle/contracts/TelcoinSale.sol
+	sed '/contract/,$$!d' contracts/TelcoinSale.sol >> bundle/contracts/TelcoinSale.sol
+	mkdir -p bundle/contracts
+	rm -f bundle/contracts/Telcoin.sol
+	cat contracts/lib/SafeMath.sol >> bundle/contracts/Telcoin.sol
+	echo >> bundle/contracts/Telcoin.sol
+	echo >> bundle/contracts/Telcoin.sol
+	sed '/contract/,$$!d' contracts/Telcoin.sol >> bundle/contracts/Telcoin.sol
