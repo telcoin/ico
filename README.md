@@ -1,5 +1,10 @@
 # Telcoin ICO
 
+Our ICO is now live!
+
+* **LIVE**: [Telcoin ICO](https://etherscan.io/address/0x78F7eF08b4583F9866D8a98A9f2D9B64d9c02380) (Crowdsale Contract)
+* **LIVE**: [Telcoin](https://etherscan.io/address/0x85e076361cc813a908ff672f9bad1541474402b2) (ERC20 Token Contract)
+
 ## Build requirements
 
 * Yarn
