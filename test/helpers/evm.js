@@ -7,6 +7,7 @@ const promisor = require('./promisor')
 module.exports.Throw = 'invalid opcode'
 
 module.exports.Revert = 'revert'
+module.exports.OutOfGas = 'out of gas'
 
 module.exports.BigNumber = web3.BigNumber
 
