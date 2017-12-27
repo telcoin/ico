@@ -252,9 +252,10 @@ contract('TelcoinSaleKYCEscrow', accounts => {
         })
 
         it(`should refund balance`, async () => {
-          const [owner, wallet, participant1, participant2] = accounts
+          const [owner, wallet, participant1, participant2, participant3] = accounts
           const sale = await createSale({owner, wallet})
           const escrow = await expect(TelcoinSaleKYCEscrow.new(sale.address, {from: owner})).to.be.fulfilled
+          const escrowBalance1 = await evm.getBalance(escrow.address)
           await expect(escrow.sendTransaction({value: wei(1000), from: participant1})).to.be.fulfilled
           await expect(escrow.placeValue(participant1, {value: wei(1000), from: participant1})).to.be.fulfilled
           const balance1 = await evm.getBalance(participant1)
@@ -262,10 +263,13 @@ contract('TelcoinSaleKYCEscrow', accounts => {
           const balance2 = await evm.getBalance(participant1)
           expect(balance2.minus(balance1)).to.bignumber.equal(wei(2000))
           await expect(escrow.placeValue(participant2, {value: wei(150), from: participant2})).to.be.fulfilled
+          await expect(escrow.placeValue(participant3, {value: wei(450), from: participant3})).to.be.fulfilled
           const balance3 = await evm.getBalance(participant2)
           await expect(escrow.rejectMany([participant2], {from: owner})).to.be.fulfilled
           const balance4 = await evm.getBalance(participant2)
           expect(balance4.minus(balance3)).to.bignumber.equal(wei(150))
+          const escrowBalance2 = await evm.getBalance(escrow.address)
+          expect(escrowBalance2.minus(escrowBalance1)).to.bignumber.equal(wei(450))
         })
 
         it(`should pass enough gas for expensive refunds`, async () => {
