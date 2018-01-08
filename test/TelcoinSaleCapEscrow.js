@@ -328,9 +328,9 @@ contract('TelcoinSaleCapEscrow', accounts => {
           await expect(escrow.sendTransaction({value: wei(1000), from: participant1})).to.be.fulfilled
           await expect(escrow.sendTransaction({value: wei(1000), from: participant2})).to.be.fulfilled
           await expect(escrow.approve(participant1, wei(1000), {from: nonOwner})).to.be.rejectedWith(evm.Revert)
-          await expect(escrow.approveMany([participant1], wei(1000), {from: nonOwner})).to.be.rejectedWith(evm.Revert)
+          await expect(escrow.approveMany([participant1], [wei(1000)], {from: nonOwner})).to.be.rejectedWith(evm.Revert)
           await expect(escrow.approve(participant1, wei(1000), {from: owner})).to.be.fulfilled
-          await expect(escrow.approveMany([participant2], wei(1000), {from: owner})).to.be.fulfilled
+          await expect(escrow.approveMany([participant2], [wei(1000)], {from: owner})).to.be.fulfilled
         })
       })
 
@@ -341,10 +341,10 @@ contract('TelcoinSaleCapEscrow', accounts => {
           await expect(escrow.sendTransaction({value: wei(1000), from: participant1})).to.be.fulfilled
           await expect(escrow.approve(participant1, wei(1000), {from: owner})).to.be.fulfilled
           await expect(escrow.approve(participant1, wei(1000), {from: owner})).to.be.rejectedWith(evm.Revert)
-          await expect(escrow.approveMany([participant2], wei(1000), {from: owner})).to.be.rejectedWith(evm.Revert)
+          await expect(escrow.approveMany([participant2], [wei(1000)], {from: owner})).to.be.rejectedWith(evm.Revert)
           await expect(escrow.sendTransaction({value: wei(1000), from: participant2})).to.be.fulfilled
           await expect(escrow.sendTransaction({value: wei(1000), from: participant1})).to.be.fulfilled
-          await expect(escrow.approveMany([participant2, participant1], wei(1000), {from: owner})).to.be.fulfilled
+          await expect(escrow.approveMany([participant2, participant1], [wei(1000), wei(1000)], {from: owner})).to.be.fulfilled
         })
 
         it(`should not allow approval greater than deposit`, async () => {
@@ -372,9 +372,32 @@ contract('TelcoinSaleCapEscrow', accounts => {
           await expect(escrow.deposited.call(participant2)).to.eventually.bignumber.equal(wei(1000))
           await expect(escrow.sendTransaction({value: wei(2000), from: participant1})).to.be.fulfilled
           await expect(escrow.deposited.call(participant1)).to.eventually.bignumber.equal(wei(2000))
-          await expect(escrow.approveMany([participant1, participant2], wei(1000), {from: owner})).to.be.fulfilled
+          await expect(escrow.approveMany([participant1, participant2], [wei(1000), wei(1000)], {from: owner})).to.be.fulfilled
           await expect(escrow.deposited.call(participant1)).to.eventually.bignumber.equal(wei(1000))
           await expect(escrow.deposited.call(participant2)).to.eventually.bignumber.equal(wei(0))
+        })
+
+        it(`should require equivalent number of wei amounts when approving many`, async () => {
+          const [owner, wallet, participant1, participant2] = accounts
+          const escrow = await expect(TelcoinSaleCapEscrow.new(wallet, {from: owner, value: wei(1)})).to.be.fulfilled
+          await expect(escrow.sendTransaction({value: wei(3000), from: participant1})).to.be.fulfilled
+          await expect(escrow.sendTransaction({value: wei(5000), from: participant2})).to.be.fulfilled
+          await expect(escrow.approveMany([participant1, participant2], [], {from: owner})).to.be.rejectedWith(evm.Revert)
+          await expect(escrow.approveMany([participant1, participant2], [wei(2000)], {from: owner})).to.be.rejectedWith(evm.Revert)
+          await expect(escrow.approveMany([participant1, participant2], [wei(200), wei(900), wei(1000)], {from: owner})).to.be.rejectedWith(evm.Revert)
+          await expect(escrow.approveMany([participant1, participant2], [wei(200), wei(900)], {from: owner})).to.be.fulfilled
+        })
+
+        it(`should approve corresponding amounts when approving many`, async () => {
+          const [owner, wallet, participant1, participant2, participant3] = accounts
+          const escrow = await expect(TelcoinSaleCapEscrow.new(wallet, {from: owner, value: wei(1)})).to.be.fulfilled
+          await expect(escrow.sendTransaction({value: wei(3000), from: participant1})).to.be.fulfilled
+          await expect(escrow.sendTransaction({value: wei(5000), from: participant2})).to.be.fulfilled
+          await expect(escrow.sendTransaction({value: wei(1000), from: participant3})).to.be.fulfilled
+          await expect(escrow.approveMany([participant1, participant2, participant3], [wei(200), wei(900), wei(1000)], {from: owner})).to.be.fulfilled
+          await expect(escrow.deposited.call(participant1)).to.eventually.bignumber.equal(wei(2800))
+          await expect(escrow.deposited.call(participant2)).to.eventually.bignumber.equal(wei(4100))
+          await expect(escrow.deposited.call(participant3)).to.eventually.bignumber.equal(wei(0))
         })
 
         it(`should send approved amount to wallet`, async () => {
@@ -402,7 +425,7 @@ contract('TelcoinSaleCapEscrow', accounts => {
           expect(log1.args.participant).to.equal(participant1)
           expect(log1.args.amount).to.bignumber.equal(wei(1000))
           await expect(escrow.placeValue(participant2, {value: wei(150), from: participant2})).to.be.fulfilled
-          const {logs: logs2} = await expect(escrow.approveMany([participant2], wei(150), {from: owner})).to.be.fulfilled
+          const {logs: logs2} = await expect(escrow.approveMany([participant2], [wei(150)], {from: owner})).to.be.fulfilled
           const log2 = logs2.find(e => e.event === 'Approved')
           expect(log2).to.exist
           expect(log2.args.participant).to.equal(participant2)

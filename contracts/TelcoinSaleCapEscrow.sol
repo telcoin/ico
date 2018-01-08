@@ -65,9 +65,11 @@ contract TelcoinSaleCapEscrow {
         wallet.transfer(_weiAmount);
     }
 
-    function approveMany(address[] _participants, uint256 _weiAmount) onlyOwner public {
+    function approveMany(address[] _participants, uint256[] _weiAmounts) onlyOwner public {
+        require(_participants.length == _weiAmounts.length);
+
         for (uint256 i = 0; i < _participants.length; i++) {
-            approve(_participants[i], _weiAmount);
+            approve(_participants[i], _weiAmounts[i]);
         }
     }
 
