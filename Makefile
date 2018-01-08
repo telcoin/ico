@@ -48,7 +48,7 @@ bundle:
 	echo >> bundle/contracts/Telcoin.sol
 	echo >> bundle/contracts/Telcoin.sol
 	sed '/contract/,$$!d' contracts/Telcoin.sol >> bundle/contracts/Telcoin.sol
-	cat contracts/lib/SafeMath.sol >> bundle/contracts/TelcoinSaleKYCEscrow.sol
+	cat contracts/lib/SafeMath.sol > bundle/contracts/TelcoinSaleKYCEscrow.sol
 	echo >> bundle/contracts/TelcoinSaleKYCEscrow.sol
 	echo >> bundle/contracts/TelcoinSaleKYCEscrow.sol
 	sed '/contract/,$$!d' contracts/Telcoin.sol >> bundle/contracts/TelcoinSaleKYCEscrow.sol
@@ -61,3 +61,7 @@ bundle:
 	echo >> bundle/contracts/TelcoinSaleKYCEscrow.sol
 	echo >> bundle/contracts/TelcoinSaleKYCEscrow.sol
 	sed '/contract/,$$!d' contracts/TelcoinSaleKYCEscrow.sol >> bundle/contracts/TelcoinSaleKYCEscrow.sol
+	cat contracts/lib/SafeMath.sol > bundle/contracts/TelcoinSaleCapEscrow.sol
+	echo >> bundle/contracts/TelcoinSaleCapEscrow.sol
+	echo >> bundle/contracts/TelcoinSaleCapEscrow.sol
+	sed '/contract/,$$!d' contracts/TelcoinSaleCapEscrow.sol >> bundle/contracts/TelcoinSaleCapEscrow.sol
