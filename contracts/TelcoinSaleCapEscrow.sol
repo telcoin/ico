@@ -1,7 +1,6 @@
 pragma solidity 0.4.18;
 
 import "./lib/SafeMath.sol";
-import "./TelcoinSale.sol";
 
 
 contract TelcoinSaleCapEscrow {
